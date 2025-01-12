@@ -1,7 +1,7 @@
 {
-  "name": "com.r2.render.effect",
+  "name": "com.xuanxuan.nb.shaders",
   "version": "0.0.1",
-  "displayName": "R2RenderEffect",
-  "description": "R2特效渲染相关功能",
+  "displayName": "NBShaders",
+  "description": "NB特效渲染相关功能",
   "unity": "2019.1"
 }
