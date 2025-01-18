@@ -2,15 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Sirenix.OdinInspector;
+// using Sirenix.OdinInspector;
 
 [ExecuteAlways]
 public class SpriteNiuBiHelper : MonoBehaviour
 {
     public Sprite sprite;
-    [ReadOnly]
+    // [ReadOnly]
     public SpriteRenderer spRenderer;
-    [ReadOnly]
+    // [ReadOnly]
     public Image image;
 
     private Material mat;
@@ -23,7 +23,7 @@ public class SpriteNiuBiHelper : MonoBehaviour
         Init();
     }
     
-    [Button("初始化")]
+    // [Button("初始化")]
     void Init()
     {
         if (TryGetComponent<SpriteRenderer>(out SpriteRenderer spr))

@@ -41,7 +41,7 @@ namespace UnityEditor
             
             if (!_stencilValuesConfig)
             {
-                _stencilValuesConfig = AssetDatabase.LoadAssetAtPath<StencilValuesConfig>("Packages/com.r2.render.effect/Shader/StencilConfig.asset");
+                _stencilValuesConfig = AssetDatabase.LoadAssetAtPath<StencilValuesConfig>("Packages/com.xuanxuan.nb.shaders/Shader/StencilConfig.asset");
             }
             matEditor = materialEditor;
             isCustomedStencil = false;
@@ -1797,6 +1797,7 @@ namespace UnityEditor
                 }
             }
             
+            //TODO:GetSetActiveTrailVertexStreams在部分版本不支持。
             // Display a warning if any renderers have incorrect vertex streams
             string trailWarnings = "";
             List<ParticleSystemVertexStream> trailRendererStreams = new List<ParticleSystemVertexStream>();

@@ -116,10 +116,10 @@ Shader "Mh2/Effects/ParallaxCrystal"
                 #pragma  shader_feature_local CRYSTAL_VERTEX_OFFSET
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-                #include "Packages/com.r2.render.utility/Shader/HLSL/Mh2_Utility.hlsl"
+                #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2_Utility.hlsl"
 
                 #define CRYSTAL_BASE_PASS
-                #include "Packages/com.r2.render.utility/Shader/HLSL/Mh2ParallexCrystalFuciton.hlsl"
+                #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2ParallexCrystalFuciton.hlsl"
     
                
                 ENDHLSL
@@ -171,7 +171,7 @@ Shader "Mh2/Effects/ParallaxCrystal"
                 // #if defined(LOD_FADE_CROSSFADE)
                 //     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
                 // #endif
-                #include "Packages/com.r2.render.utility/Shader/HLSL/Mh2ParallexCrystalFuciton.hlsl"
+                #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2ParallexCrystalFuciton.hlsl"
 
                 // Shadow Casting Light geometric parameters. These variables are used when applying the shadow Normal Bias and are set by UnityEngine.Rendering.Universal.ShadowUtils.SetupShadowCasterConstantBuffer in com.unity.render-pipelines.universal/Runtime/ShadowUtils.cs
                 // For Directional lights, _LightDirection is used when applying shadow Normal Bias.
