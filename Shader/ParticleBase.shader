@@ -1,4 +1,4 @@
-﻿Shader "Mh2/Effects/Particle_NiuBi"
+﻿Shader "Effects/NBShader"
 {
     Properties
     {
