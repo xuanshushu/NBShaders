@@ -60,7 +60,7 @@
     #define FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE (1 << 22)
     #define FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM (1 << 23)
  
-
+    //WrapMode不能够超过16位（因为会占用x和x+16两个bit位）
     #define FLAG_BIT_WRAPMODE_BASEMAP (1 << 0)
     #define FLAG_BIT_WRAPMODE_MASKMAP (1 << 1)
     #define FLAG_BIT_WRAPMODE_MASKMAP2 (1 << 2)

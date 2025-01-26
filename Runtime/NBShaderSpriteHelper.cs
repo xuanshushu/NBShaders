@@ -5,13 +5,16 @@ using UnityEngine.UI;
 // using Sirenix.OdinInspector;
 
 [ExecuteAlways]
-public class SpriteNiuBiHelper : MonoBehaviour
+public class NBShaderSpriteHelper : MonoBehaviour
 {
     public Sprite sprite;
     // [ReadOnly]
     public SpriteRenderer spRenderer;
     // [ReadOnly]
     public Image image;
+
+    [InspectorButton("初始化","Init")]
+    public bool ButtomInspector;
 
     private Material mat;
     
@@ -23,7 +26,6 @@ public class SpriteNiuBiHelper : MonoBehaviour
         Init();
     }
     
-    // [Button("初始化")]
     void Init()
     {
         if (TryGetComponent<SpriteRenderer>(out SpriteRenderer spr))

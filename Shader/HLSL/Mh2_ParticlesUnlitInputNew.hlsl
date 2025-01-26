@@ -166,27 +166,69 @@
     {
         return (_W9ParticleShaderFlags1&bits) != 0;
     }
-    bool CheckLocalWrapFlags(uint bits)
+    int CheckLocalWrapFlags(uint bits)
     {
-        return (_W9ParticleShaderWrapFlags&bits) != 0;
-    }
-
-    SamplerState sampler_linear_clamp;
-    SamplerState sampler_linear_repeat;
-
-    half4 SampleTexture2DWithWrapFlags(Texture2D tex,float2 uv,uint bits)
-    {
-        UNITY_BRANCH
-        if(CheckLocalWrapFlags(bits))
+        bool bit0 = (_W9ParticleShaderWrapFlags&bits) != 0;
+        bool bit1 = (_W9ParticleShaderWrapFlags&(bits<<16)) != 0;
+        if(!bit0 && !bit1)
         {
-            //1为Clamp
-            return tex.Sample(sampler_linear_clamp,uv);
+            return 0;
+        }
+        else if(bit0 && !bit1)
+        {
+            return 1;
+        }
+        else if(!bit0 && bit1)
+        {
+             return 2;
+        }
+        else if(bit0 && bit1)
+        {
+            return 3;
         }
         else
         {
-            //0为Repeat
+            return -1;
+        }
+    }
+
+    SamplerState sampler_linear_repeat;
+    SamplerState sampler_linear_clamp;
+    SamplerState sampler_linear_RepeatU_ClampV;
+    SamplerState sampler_linear_ClampU_RepeatV;
+
+    half4 SampleTexture2DWithWrapFlags(Texture2D tex,float2 uv,uint bits)
+    {
+        // UNITY_BRANCH
+        // if(CheckLocalWrapFlags(bits))
+        // {
+        //     //1为Clamp
+        //     return tex.Sample(sampler_linear_clamp,uv);
+        // }
+        // else
+        // {
+        //     //0为Repeat
+        //     return tex.Sample(sampler_linear_repeat,uv);
+        //     
+        // }
+        const int wrapMode = CheckLocalWrapFlags(bits);
+        switch (wrapMode)
+        {
+        case 0:
             return tex.Sample(sampler_linear_repeat,uv);
-            
+            break;
+        case 1:
+            return tex.Sample(sampler_linear_clamp,uv);
+            break;
+        case 2:
+            return tex.Sample(sampler_linear_RepeatU_ClampV,uv);
+            break;
+        case 3:
+            return tex.Sample(sampler_linear_ClampU_RepeatV,uv);
+            break;
+        default:
+            return tex.Sample(sampler_linear_repeat,uv);
+            break;
         }
     }
 
