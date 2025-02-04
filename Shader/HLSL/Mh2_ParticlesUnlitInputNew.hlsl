@@ -676,9 +676,9 @@
         //     uv = PolarCoordinates(uv, _PCCenter.xyz,half4(1,1,0,0));
         // }
         float2 uv = originUVAfterTwirlPolar;
+        uv = Rotate_Radians_float(uv,rotationCenter,rotation);
         uv = uv*scaleTilling.xy + scaleTilling.zw;
         
-        uv = Rotate_Radians_float(uv,rotationCenter,rotation);
         uv = UVOffsetAnimaiton(uv,offset);
         
         return uv;
@@ -704,24 +704,6 @@
 
     void ParticleProcessUV(float4 meshTexcoord0, float2 specialUVInTexcoord3,inout ParticleUVs particleUVs,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,float2 screenUV,float3 postionOS)
     {
-        // float2 originUVAfterSpriteProcess = originUV;
-        // if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE))
-        // {
-        //     originUVAfterSpriteProcess = originUV*_MainTex_Reverse_ST.xy +_MainTex_Reverse_ST.zw;
-        // }
-        // float2 originUVAfterTwirl = originUVAfterSpriteProcess;
-        //
-        // if(CheckLocalFlags(FLAG_BIT_PARTICLE_UTWIRL_ON))
-        // {
-        //    originUVAfterTwirl = UTwirl(originUV,_TWParameter.xy, _TWStrength);
-        // }
-        //
-        // float2 originUVAfterTwirlPolar = originUVAfterSpriteProcess;
-        // if(CheckLocalFlags(FLAG_BIT_PARTICLE_POLARCOORDINATES_ON))
-        // {
-        //     originUVAfterTwirlPolar = PolarCoordinates(originUVAfterTwirl,_PCCenter.xy);
-        // }
-        
         //UV2的内容在外边就决定好。
         float2 defaultUVChannel = meshTexcoord0.xy;
         float2 specialUVChannel = meshTexcoord0.zw;
@@ -771,7 +753,9 @@
         }
         if(CheckLocalFlags(FLAG_BIT_PARTICLE_POLARCOORDINATES_ON))
         {
+            float2 UVAfterTwirl = UVAfterTwirlPolar;
             UVAfterTwirlPolar = PolarCoordinates(UVAfterTwirlPolar,_PCCenter.xy);
+            UVAfterTwirlPolar = lerp(UVAfterTwirl,UVAfterTwirlPolar,_PCCenter.z);
         }
         float2 baseMapUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_MAINTEX,defaultUVChannel,specialUVChannel,UVAfterTwirlPolar,cylinderUV);
 
@@ -787,23 +771,12 @@
                 particleUVs.animBlendUV = meshTexcoord0.zw;
             }
         #endif
-        
-
-        // if(CheckLocalFlags(FLAG_BIT_PARTICLE_UTWIRL_ON))
-        // {
-        //     baseMapUV = originUVAfterTwirl;
-        // }
-        
-        // if(CheckLocalFlags(FLAG_BIT_PARTICLE_POLARCOORDINATES_ON)&&!CheckLocalFlags(FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC))
-        // {
-        //     // baseMapUV = PolarCoordinates(baseMapUV, _PCCenter.xyz,half4(1,1,0,0));
-        //     baseMapUV = PolarCoordinatesStrengthAndST(originUVAfterTwirl,originUVAfterTwirlPolar, _PCCenter.z,half4(1,1,0,0));
-        // }
 
 
         #ifdef _SCREEN_DISTORT_MODE
             particleUVs.mainTexUV = screenUV;
         #else
+            baseMapUV = Rotate_Radians_float(baseMapUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
             UNITY_BRANCH
             if(CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
             {
@@ -819,47 +792,24 @@
             }
             else
             {
-                    
-                // UNITY_BRANCH
-                // if (CheckLocalFlags(FLAG_BIT_PARTICLE_CUSTOMDATA1X_MAINTEXOFFSETX))
-                // {
-                //     baseMapUV.x += VaryingsP_Custom1.x;
-                // }
-                // UNITY_BRANCH
-                // if (CheckLocalFlags(FLAG_BIT_PARTICLE_CUSTOMDATA1Y_MAINTEXOFFSETY))
-                // {
-                //     baseMapUV.y += VaryingsP_Custom1.y;
-                // }
                 baseMapUV.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0,VaryingsP_Custom1,VaryingsP_Custom2);
                 baseMapUV.y += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0,VaryingsP_Custom1,VaryingsP_Custom2);
                 particleUVs.mainTexUV = TRANSFORM_TEX(baseMapUV, _BaseMap);  //主帖图UV重复和偏移
             }
+            // particleUVs.mainTexUV = Rotate_Radians_float(particleUVs.mainTexUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
             particleUVs.mainTexUV = UVOffsetAnimaiton(particleUVs.mainTexUV,_BaseMapMaskMapOffset.xy);
-            particleUVs.mainTexUV = Rotate_Radians_float(particleUVs.mainTexUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
             
         #endif
         
 
         #if defined(_MASKMAP_ON)
-            // float2 MaskMapuv = originUVAfterTwirl;
-            //
-            // if(CheckLocalFlags(FLAG_BIT_PARTICLE_POLARCOORDINATES_ON))
-            // {
-            //     MaskMapuv = PolarCoordinatesStrengthAndST(originUVAfterTwirl,originUVAfterTwirlPolar, _PCCenter.z, _MaskMap_ST);
-            // }
+        
             float2 MaskMapuv = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_MASKMAP,defaultUVChannel,specialUVChannel,UVAfterTwirlPolar,cylinderUV);
 
+            MaskMapuv= Rotate_Radians_float(MaskMapuv, half2(0.5, 0.5), _MaskMapUVRotation);
+        
             MaskMapuv = TRANSFORM_TEX(MaskMapuv, _MaskMap);
-            // UNITY_BRANCH
-            // if (CheckLocalFlags(FLAG_BIT_PARTICLE_CUSTOMDATA2X_MASKMAPOFFSETX))
-            // {
-            //     MaskMapuv.x += VaryingsP_Custom2.x;
-            // }
-            // UNITY_BRANCH
-            // if (CheckLocalFlags(FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY))
-            // {
-            //     MaskMapuv.y += VaryingsP_Custom2.y;
-            // }
+        
             MaskMapuv.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X,0,VaryingsP_Custom1,VaryingsP_Custom2);
             MaskMapuv.y += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y,0,VaryingsP_Custom1,VaryingsP_Custom2);
                     
@@ -868,7 +818,6 @@
             {
                 _MaskMapUVRotation += time * _MaskMapRotationSpeed;
             }
-            MaskMapuv= Rotate_Radians_float(MaskMapuv, half2(0.5, 0.5), _MaskMapUVRotation);
             // output.texcoord.zw = UVOffsetAnimaiton(output.texcoord.zw,_BaseMapMaskMapOffset.zw);
 
             MaskMapuv = UVOffsetAnimaiton(MaskMapuv,_MaskMapOffsetAnition.xy);
