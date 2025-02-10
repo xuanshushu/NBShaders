@@ -224,6 +224,7 @@ namespace UnityEditor
         public void DrawBaseOptions()
         {
             helper.DrawFloat("整体颜色强度","_BaseColorIntensityForTimeline");
+            helper.DrawSlider("整体透明度","_AlphaAll",0f,1f);
             if (!_uieffectEnabled)
             {
                 helper.DrawPopUp("深度测试","_ZTest",Enum.GetNames(typeof(CompareFunction)));
@@ -237,7 +238,6 @@ namespace UnityEditor
             helper.DrawPopUp("渲染面向","_Cull",Enum.GetNames(typeof(RenderFace)));
                 
             
-            helper.DrawSlider("整体透明度","_AlphaAll",0f,1f);
             
             if (!_uieffectEnabled)
             {
@@ -254,6 +254,7 @@ namespace UnityEditor
 
                         if (isBackFirstPass)
                         {
+                            EditorGUILayout.HelpBox("预渲染反面会导致打断动态合批，请谨慎使用。",MessageType.Warning);
                             mats[0].SetFloat("_Cull", (float)RenderFace.Front);
                         }
 

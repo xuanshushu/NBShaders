@@ -373,7 +373,9 @@
         float fade = 1;
         if (near > 0.0 || far > 0.0)
         {
-            fade = saturate(far * ((sceneZ - near) - thisZ));
+            // fade = saturate(far * ((sceneZ - near) - thisZ));
+            float dist = sceneZ - thisZ;
+            fade = Mh2Remap(dist, near,far,0,1);
         }
         return fade;
     }

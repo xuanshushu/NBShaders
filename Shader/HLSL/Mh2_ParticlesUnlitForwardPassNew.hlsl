@@ -515,10 +515,7 @@
         }
         else if (CheckLocalFlags(FLAG_BIT_PARTICLE_CHORATICABERRAT))
         {
-            // if(CheckLocalFlags1(FLAG_BIT_PARTICLE_CUSTOMDATA2W_CHORATICABERRAT_INTENSITY))
-            // {
-            //     _DistortionDirection.z = input.VaryingsP_Custom2.w;
-            // }
+           
             _DistortionDirection.z = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,_DistortionDirection.z,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
             // #if defined(_NOISEMAP)
             albedo = DistortionChoraticaberrat(baseMap,originUV,uv,_DistortionDirection.z,FLAG_BIT_WRAPMODE_BASEMAP);
@@ -543,12 +540,6 @@
         if(CheckLocalFlags(FLAG_BIT_HUESHIFT_ON))
         {
             half3 hsv = RgbToHsv(result);
-            // UNITY_FLATTEN
-            // if(CheckLocalFlags(FLAG_BIT_PARTICLE_CUSTOMDATA1W_HUESHIFT))
-            // {
-            //     // _HueShift += _CustomData1W;
-            //     _HueShift = input.VaryingsP_Custom1.w;
-            // }
             _HueShift = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_HUESHIFT,_HueShift,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
             hsv.r += _HueShift;
             result = HsvToRgb(hsv);
