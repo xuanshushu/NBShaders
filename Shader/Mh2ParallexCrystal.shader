@@ -1,5 +1,5 @@
 //基于视差映射的水晶Shader。
-Shader "Mh2/Effects/ParallaxCrystal"
+Shader "XuanXuan/Effects/ParallaxCrystal"
 {
         Properties
         { 
@@ -116,7 +116,7 @@ Shader "Mh2/Effects/ParallaxCrystal"
                 #pragma  shader_feature_local CRYSTAL_VERTEX_OFFSET
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-                #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2_Utility.hlsl"
+                #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
 
                 #define CRYSTAL_BASE_PASS
                 #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2ParallexCrystalFuciton.hlsl"

@@ -66,7 +66,7 @@ public class NBShaderSpriteHelper : MonoBehaviour
                 mat = image.material;
             }
 
-            if (mat && mat.shader.name == "Mh2/Effects/Particle_NiuBi")
+            if (mat && mat.shader.name == "XuanXuan/Effects/Particle_NiuBi")
             {
                 mat.SetVector("_MainTex_Reverse_ST",CalScaleOffset(rect,texture));
                 Debug.Log(mat.name);

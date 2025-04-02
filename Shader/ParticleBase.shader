@@ -390,7 +390,7 @@
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
             
-            #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2_Utility.hlsl"
+            #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
             #include "HLSL/Mh2_ParticlesUnlitInputNew.hlsl"
             #include "HLSL/Mh2_ParticlesUnlitForwardPassNew.hlsl"
             
@@ -485,7 +485,7 @@
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
 
             // #include "../HLSL/Flags/Flags.hlsl"
-            #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/Mh2_Utility.hlsl"
+            #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
             // #include "../HLSL/Mh2_ParticlesUnlitInput.hlsl"
             // #include "../HLSL/Mh2_ParticlesUnlitForwardPass.hlsl"
 
