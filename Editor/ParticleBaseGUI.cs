@@ -194,8 +194,14 @@ namespace UnityEditor
 
                     helper.DrawSlider("主贴图旋转", "_BaseMapUVRotation", 0f, 360f);
                 }
-               
-                
+
+                DrawNoiseAffectBlock(() =>
+                {
+                    helper.DrawSlider("主贴图扭曲强度","_TexDistortion_intensity",-1.0f,1.0f);
+
+                });
+
+
                 DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitHueShift,3,"主贴图色相偏移","_HueShift_Toggle",W9ParticleShaderFlags.FLAG_BIT_HUESHIFT_ON,isIndentBlock:true,drawBlock:(isToggle)=>{
                         helper.DrawSlider("色相","_HueShift",0,1);
                         DrawCustomDataSelect("色相自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_HUESHIFT,0);
@@ -307,20 +313,7 @@ namespace UnityEditor
                     helper.DrawVector4In2Line("_SoftParticleFadeParams","远近裁剪面");
                 });
                 
-                DrawNoiseAffectBlock(() =>
-                {
-                    helper.DrawToggle("用于屏幕扰动",shaderKeyword:"_SCREEN_DISTORT_MODE",drawBlock: isToggle =>
-                    {
-                        if (isToggle)
-                        {
-                            //强制设置为Clamp模式。
-                            for (int i = 0; i < mats.Count; i++)
-                            {
-                                shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP, index: 2);
-                            }
-                        }
-                    });
-                });
+           
                 
                 helper.DrawToggle("剔除主角色",shaderKeyword:"_STENCIL_WITHOUT_PLAYER", drawBlock: isToggle =>
                 {
@@ -410,9 +403,21 @@ namespace UnityEditor
                 // }
             });
             
-            DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitNoise,3,"扭曲贴图","_noisemapEnabled",shaderKeyword:"_NOISEMAP",fontStyle:FontStyle.Bold,drawBlock:(isToggle) => {
+            DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitNoise,3,"扭曲","_noisemapEnabled",shaderKeyword:"_NOISEMAP",fontStyle:FontStyle.Bold,drawBlock:(isToggle) => {
 
                 _noiseEnabled = isToggle;
+            
+                helper.DrawToggle("用于屏幕扰动",shaderKeyword:"_SCREEN_DISTORT_MODE",drawBlock: isScreenDistortToggle =>
+                {
+                    if (isScreenDistortToggle)
+                    {
+                        //强制设置为Clamp模式。
+                        for (int i = 0; i < mats.Count; i++)
+                        {
+                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP, index: 2);
+                        }
+                    }
+                });
                 // if (isToggle)
                 // {
                 // EditorGUILayout.BeginHorizontal();
@@ -421,7 +426,7 @@ namespace UnityEditor
                          theNoiseMap =>
                          {
                              DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeNoiseMap,4,"扭曲贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_NOISE_MAP,0);
-                             helper.DrawSlider("扭曲强度","_TexDistortion_intensity",-1.0f,1.0f);
+                             helper.DrawSlider("主贴图扭曲强度","_TexDistortion_intensity",-1.0f,1.0f);
                              DrawCustomDataSelect("扭曲强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_NOISE_INTENSITY,1);
                              helper.DrawVector4In2Line("_DistortionDirection","扭曲方向强度");
                              DrawCustomDataSelect("扭曲方向强度X自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_X,2);

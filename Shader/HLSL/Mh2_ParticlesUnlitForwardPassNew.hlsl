@@ -283,7 +283,7 @@
     
     half4 fragParticleUnlit(VaryingsParticle input, half facing : VFACE): SV_Target
     {
-
+        
         input.viewDirWS = normalize(input.viewDirWS );
         
         
@@ -343,7 +343,7 @@
             #endif
             sceneZ = (unity_OrthoParams.w == 0) ? LinearEyeDepth(sceneZBufferDepth, _ZBufferParams) : LinearDepthToEyeDepth(sceneZBufferDepth);//场景当前深度
         }
-        
+    
         real thisZ = 0;
         if(needEyeDepth())
         {
@@ -453,8 +453,10 @@
         
         half2 cum_noise = 0;
         half2 cum_noise_xy = 0.5;
+        half noiseMask = 1;
         #if defined(_NOISEMAP)
-            cum_noise = SampleNoise(_NoiseOffset, _NoiseMap, noiseMap_uv, input.positionWS.xyz);
+            half4 noiseSample = SampleNoise(_NoiseOffset, _NoiseMap, noiseMap_uv, input.positionWS.xyz);
+            cum_noise = noiseSample.xy;
             UNITY_FLATTEN
             if(CheckLocalFlags(FLAG_BIT_PARTICLE_NOISEMAP_NORMALIZEED_ON))
             {
@@ -463,7 +465,8 @@
             UNITY_BRANCH
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_NOISE_MASKMAP))
             {
-                cum_noise *= SampleTexture2DWithWrapFlags(_NoiseMaskMap,noiseMaskMap_uv,FLAG_BIT_WRAPMODE_NOISE_MASKMAP).r;
+                noiseMask= SampleTexture2DWithWrapFlags(_NoiseMaskMap,noiseMaskMap_uv,FLAG_BIT_WRAPMODE_NOISE_MASKMAP).r;
+                noiseMask *= noiseSample.a;
             }
             // if(CheckLocalFlags1(FLAG_BIT_PARTICLE_CUSTOMDATA1Z_NOISE_INTENSITY))
             // {
@@ -479,56 +482,54 @@
                 cum_noise_xy = cum_noise_xy * 1.25 + 0.5;
             #endif
 
-            float2 mainTexNoise =  cum_noise * _TexDistortion_intensity * _DistortionDirection.xy;
+            float2 mainTexNoise =  cum_noise * noiseMask * _TexDistortion_intensity * _DistortionDirection.xy;
             uv.xy += mainTexNoise;//主贴图纹理扭曲
             blendUv.xy += mainTexNoise;
         #endif
         
         // SampleAlbedo--------------------
         half4 albedo = 0;
-
         #if defined(_SCREEN_DISTORT_MODE)
-
-        albedo = half4(cum_noise_xy, 1.0, 1.0);
-
+            albedo = half4(cum_noise_xy, 1.0, noiseMask);
         #else
+            UNITY_FLATTEN
+            if(CheckLocalFlags(FLAG_BIT_PARTICLE_BACKCOLOR))
+            {
+                _BaseColor = facing > 0 ? _BaseColor : _BaseBackColor;
+            }
 
-        UNITY_FLATTEN
-        if(CheckLocalFlags(FLAG_BIT_PARTICLE_BACKCOLOR))
-        {
-            _BaseColor = facing > 0 ? _BaseColor : _BaseBackColor;
-        }
 
-
-        Texture2D baseMap;
-        
-        #ifdef _SCREEN_DISTORT_MODE
-            baseMap = _ScreenColorCopy1;
-        #else
-            baseMap = _BaseMap;
-        #endif
-        
-        UNITY_BRANCH
-        if (CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
-        {
-            albedo = BlendTexture(_MainTex, uv, blendUv) * _Color;
-        }
-        else if (CheckLocalFlags(FLAG_BIT_PARTICLE_CHORATICABERRAT))
-        {
-           
-            _DistortionDirection.z = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,_DistortionDirection.z,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
-            // #if defined(_NOISEMAP)
-            albedo = DistortionChoraticaberrat(baseMap,originUV,uv,_DistortionDirection.z,FLAG_BIT_WRAPMODE_BASEMAP);
-            // #endif
-        }
-        else
-        {
-             albedo = BlendTexture(baseMap, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+            Texture2D baseMap;
             
-        }
-        // return half4(blendUv.zzz,1);
-        albedo *= _BaseColor ;
-        albedo.rgb *= _BaseColorIntensityForTimeline;
+            #ifdef _SCREEN_DISTORT_MODE
+                baseMap = _ScreenColorCopy1;
+            #else
+                baseMap = _BaseMap;
+            #endif
+         
+        
+            UNITY_BRANCH
+            if (CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
+            {
+                albedo = BlendTexture(_MainTex, uv, blendUv) * _Color;
+            }
+            else if (CheckLocalFlags(FLAG_BIT_PARTICLE_CHORATICABERRAT))
+            {
+               
+                _DistortionDirection.z = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,_DistortionDirection.z,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
+                // #if defined(_NOISEMAP)
+                albedo = DistortionChoraticaberrat(baseMap,originUV,uv,_DistortionDirection.z,FLAG_BIT_WRAPMODE_BASEMAP);
+                // #endif
+            }
+            else
+            {
+                 albedo = BlendTexture(baseMap, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+                
+            }
+      
+            // return half4(blendUv.zzz,1);
+            albedo *= _BaseColor ;
+            albedo.rgb *= _BaseColorIntensityForTimeline;
 
         #endif
 
@@ -536,6 +537,7 @@
         
         half alpha = albedo.a;
         half3 result = albedo.rgb;
+      
         UNITY_BRANCH
         if(CheckLocalFlags(FLAG_BIT_HUESHIFT_ON))
         {
@@ -547,7 +549,6 @@
         
 
         
-        // return half4(result,1);
         
         
         //流光部分
@@ -783,7 +784,8 @@
                 maskmap1 *= maskMap3;
             }
 
-            maskmap1 = lerp(1,maskmap1,_MaskMapVec.x);
+            maskmap1.rgb = lerp(1,maskmap1.rgb,_MaskMapVec.x);
+            maskmap1.rgb = saturate(maskmap1.rgb);
         
             maskmap1.rgb *= maskmap1.a;//预乘
         

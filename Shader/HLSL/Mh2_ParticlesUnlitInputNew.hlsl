@@ -8,7 +8,6 @@
     // #endif
 
   //---------------particleInput-------------------
-    //雨轩：不知道这个CBUFFER的写法是因为URP的原因，还是变量太多这么写比较好。所以先保留着2021.05.15
     CBUFFER_START(UnityPerMaterial)
     float4 _SoftParticleFadeParams;
     float4 _CameraFadeParams;
@@ -471,7 +470,7 @@
     }
     
     // 采样噪波
-    half2 SampleNoise(half4 NoiseOffset, Texture2D _Texture,float2 UV, half3 wordPos)
+    half4 SampleNoise(half4 NoiseOffset, Texture2D _Texture,float2 UV, half3 wordPos)
     {
         // UV = lerp(UV, wordPos.xy, NoiseOffset.z);   //噪波采样沿世界坐标运动
         
@@ -479,9 +478,9 @@
 
         // half4 color = tex2D_TryLinearizeWithoutAlphaFX(_Texture, UV2 );
         half4 color = SampleTexture2DWithWrapFlags(_Texture, UV2 ,FLAG_BIT_WRAPMODE_NOISEMAP);
-        color.xy *= color.a;
+        // color.xy *= color.a;
         
-        return color.xy;
+        return color;
     }
     
     
@@ -808,6 +807,12 @@
         
             float2 MaskMapuv = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_MASKMAP,defaultUVChannel,specialUVChannel,UVAfterTwirlPolar,cylinderUV);
 
+            UNITY_BRANCH
+            if(CheckLocalFlags(FLAG_BIT_PARTILCE_MASKMAPROTATIONANIMATION_ON))
+            {
+                _MaskMapUVRotation += time * _MaskMapRotationSpeed;
+            }
+
             MaskMapuv= Rotate_Radians_float(MaskMapuv, half2(0.5, 0.5), _MaskMapUVRotation);
         
             MaskMapuv = TRANSFORM_TEX(MaskMapuv, _MaskMap);
@@ -815,11 +820,6 @@
             MaskMapuv.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X,0,VaryingsP_Custom1,VaryingsP_Custom2);
             MaskMapuv.y += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y,0,VaryingsP_Custom1,VaryingsP_Custom2);
                     
-            UNITY_BRANCH
-            if(CheckLocalFlags(FLAG_BIT_PARTILCE_MASKMAPROTATIONANIMATION_ON))
-            {
-                _MaskMapUVRotation += time * _MaskMapRotationSpeed;
-            }
             // output.texcoord.zw = UVOffsetAnimaiton(output.texcoord.zw,_BaseMapMaskMapOffset.zw);
 
             MaskMapuv = UVOffsetAnimaiton(MaskMapuv,_MaskMapOffsetAnition.xy);
