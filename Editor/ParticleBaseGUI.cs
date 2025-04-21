@@ -452,7 +452,7 @@ namespace UnityEditor
                 // }
             });
             
-            DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitDistortionChoraticaberrat, 3,"扭曲色散开关","_Distortion_Choraticaberrat_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CHORATICABERRAT,isIndentBlock:true,fontStyle:FontStyle.Bold,drawBlock:
+            DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitDistortionChoraticaberrat, 3,"扭曲色散","_Distortion_Choraticaberrat_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CHORATICABERRAT,isIndentBlock:true,fontStyle:FontStyle.Bold,drawBlock:
              (is_Choraticaberrat_Toggle) =>
              {
                  // if (is_Choraticaberrat_Toggle)
@@ -472,7 +472,7 @@ namespace UnityEditor
                     });
                     helper.DrawFloat("流光颜色强度","_EmissionMapColorIntensity");
                     helper.DrawSlider("流光贴图旋转","_EmissionMapUVRotation",0f,360f);
-                    DrawNoiseAffectBlock(() => {helper.DrawFloat("流光贴图扭转强度","_Emi_Distortion_intensity"); });
+                    DrawNoiseAffectBlock(() => {helper.DrawFloat("流光贴图扭曲强度","_Emi_Distortion_intensity"); });
                     if (!_noiseEnabled)
                     {
                         helper.GetProperty("_Emi_Distortion_intensity").floatValue = 0;
@@ -496,6 +496,7 @@ namespace UnityEditor
                         helper.DrawVector4In2Line("_DissolveOffsetRotateDistort","溶解贴图偏移速度");
                         helper.DrawVector4Componet("溶解贴图旋转","_DissolveOffsetRotateDistort","z",true,0f,360f);
                     });
+                    helper.DrawToggle("溶解度黑白值测试","_Dissolve_Test_Toggle",shaderKeyword:"_DISSOLVE_EDITOR_TEST");
                     DrawToggleFoldOut(W9ParticleShaderFlags.foldOutDissolveVoronoi,3,"程序化噪波叠加","_DissolveVoronoi_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_DISSOVLE_VORONOI,flagIndex:1,isIndentBlock:true,drawBlock:isVoronoiToggle=>{
                         // if (isVoronoiToggle)
                         // {
@@ -528,7 +529,6 @@ namespace UnityEditor
                     });
                     
                     helper.DrawVector4In2Line("_Dissolve_Vec2","溶解丝滑度（溶解值黑白调整）");
-                    helper.DrawToggle("溶解度黑白值测试","_Dissolve_Test_Toggle",shaderKeyword:"_DISSOLVE_EDITOR_TEST");
                     helper.DrawVector4Componet("溶解强度","_Dissolve","x",true,-1f,2f);
                     DrawCustomDataSelect("溶解强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,0);
                     helper.DrawVector4Componet("溶解硬度","_Dissolve","w",true,0f,1f);
@@ -608,8 +608,8 @@ namespace UnityEditor
                         }
 
                         helper.DrawVector4Componet("菲涅尔位置","_FresnelUnit","x",true,-1f,1f);
+                        DrawCustomDataSelect("菲尼尔位置自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0);
                         helper.DrawVector4Componet("菲涅尔范围","_FresnelUnit","y",true,0f,10f);
-                        DrawCustomDataSelect("菲尼尔范围自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0);
                         helper.DrawVector4Componet("菲涅尔硬度","_FresnelUnit","w",true,0f,1f);
                         helper.DrawToggle("翻转菲涅尔","_InvertFresnel_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_INVERT_ON);
                         matEditor.VectorProperty(helper.GetProperty("_FresnelRotation"),"菲涅尔方向偏移");

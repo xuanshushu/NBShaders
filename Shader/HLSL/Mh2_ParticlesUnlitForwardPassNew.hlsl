@@ -517,6 +517,7 @@
             {
                
                 _DistortionDirection.z = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,_DistortionDirection.z,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
+                _DistortionDirection.z *= 0.1;
                 // #if defined(_NOISEMAP)
                 albedo = DistortionChoraticaberrat(baseMap,originUV,uv,_DistortionDirection.z,FLAG_BIT_WRAPMODE_BASEMAP);
                 // #endif
@@ -657,10 +658,15 @@
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_DISSOVLE_USE_RAMP))
             {
                 // half rampRange =1-(dissolveValueBeforeSoftStep - softStep);
-                half rampRange =1-(originDissolve );
+                // half rampRange =1-( dissolveValueBeforeSoftStep);
+                half rampRange = 1-dissolveValueBeforeSoftStep ;
                 // rampRange = SimpleSmoothstep(1- _Dissolve.y,1,rampRange);
                 rampRange = rampRange * _DissolveRampMap_ST.x +_DissolveRampMap_ST.z;
+
+                // rampRange = saturate(rampRage)
+                // return half4(rampRange.rrr,1);
                 // half4 rampSample = tex2D_TryLinearizeWithoutAlphaFX(_DissolveRampMap,half2(rampRange,0.5));
+                
                 half4 rampSample = SampleTexture2DWithWrapFlags(_DissolveRampMap,half2(rampRange,0.5),FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP);
                 result = lerp(result,rampSample.rgb*_DissolveRampColor.rgb,rampSample.a*_DissolveRampColor.a);
             }
@@ -688,7 +694,7 @@
                 half fresnelValue = 0;
                 if(!ignoreFresnel())
                 {
-                    half3 fresnelDir = normalize(input.fresnelViewDir);
+                    half3 fresnelDir = normalize(input.fresnelViewDir+_FresnelRotation.rgb);
                     // half FresnelValue = Unity_FresnelEffect(input.normalWSAndAnimBlend.xyz, fresnelDir, _FrePower, _FresnelInOutSlider,_FresnelRotation.w);
                     // half4 cubeMap = half4(1,1,1,1);
                     // half3 FresnelColor = FresnelValue*cubeMap.rgb* _FresnelColor.rgb ;
@@ -728,8 +734,10 @@
                 UNITY_BRANCH
                 if(CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON))
                 {
+                    float fresnelColorIntensity = fresnelValue*_FresnelColor.a*_FresnelUnit.z;
                     
-                    result = lerp(result,_FresnelColor.rgb,fresnelValue*_FresnelColor.a*_FresnelUnit.z);
+                    result = lerp(result,_FresnelColor.rgb,fresnelColorIntensity);
+                    alpha = max(alpha,fresnelColorIntensity);//颜色要不要不被主贴图Alpha影响呢？
                 }
 
                 UNITY_BRANCH
