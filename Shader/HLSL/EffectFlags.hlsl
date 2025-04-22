@@ -185,4 +185,31 @@
         return cylinderUV;
     }
 
+    struct BaseUVs
+    {
+        float2 defaultUVChannel;
+        float2 specialUVChannel;
+        float2 uvAfterTwirlPolar;
+        float2 cylinderUV;
+    };
+
+    float2 GetUVByUVMode(uint flagProperty,int flagPos,BaseUVs baseUVs)
+    {
+        flagProperty = flagProperty >> flagPos;
+        flagProperty = flagProperty & 3;
+        if(flagProperty == 0)
+        {
+            return baseUVs.defaultUVChannel;
+        }
+        if(flagProperty == 1)
+        {
+            return baseUVs.specialUVChannel;
+        }
+        if(flagProperty == 2)
+        {
+            return baseUVs.uvAfterTwirlPolar;
+        }
+        return baseUVs.cylinderUV;
+    }
+
 #endif
