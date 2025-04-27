@@ -313,7 +313,7 @@
             Cull Front
             
             HLSLPROGRAM
-            #define MH2_PARTICLE
+            #define PARTICLE
             #pragma target 4.5
             #pragma exclude_renderers d3d11_9x
             #pragma exclude_renderers d3d9
@@ -375,10 +375,10 @@
             
 
             // #if defined(_SOFTPARTICLES_ON)
-            //     #define MH2_NEED_EYE_DEPTH
+            //     #define NEED_EYE_DEPTH
             // #endif
 
-            #define MH2_PARTICLE_BACKFACE_PASS
+            #define PARTICLE_BACKFACE_PASS
                     
             #pragma vertex vertParticleUnlit
             #pragma fragment fragParticleUnlit
@@ -391,8 +391,8 @@
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
             
             #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
-            #include "HLSL/Mh2_ParticlesUnlitInputNew.hlsl"
-            #include "HLSL/Mh2_ParticlesUnlitForwardPassNew.hlsl"
+            #include "HLSL/ParticlesUnlitInputNew.hlsl"
+            #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"
             
             ENDHLSL
             
@@ -410,7 +410,7 @@
             Cull[_Cull]
 
             HLSLPROGRAM
-            #define MH2_PARTICLE
+            #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
             #pragma target 4.5
             
@@ -483,14 +483,11 @@
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
-
-            // #include "../HLSL/Flags/Flags.hlsl"
+            
             #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
-            // #include "../HLSL/Mh2_ParticlesUnlitInput.hlsl"
-            // #include "../HLSL/Mh2_ParticlesUnlitForwardPass.hlsl"
 
-            #include "HLSL/Mh2_ParticlesUnlitInputNew.hlsl"
-            #include "HLSL/Mh2_ParticlesUnlitForwardPassNew.hlsl"
+            #include "HLSL/ParticlesUnlitInputNew.hlsl"
+            #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"
             
             
             ENDHLSL

@@ -1,5 +1,5 @@
-#ifndef MH2_PARTICLESUNLITFORWARDPASS
-    #define MH2_PARTICLESUNLITFORWARDPASS
+#ifndef PARTICLESUNLITFORWARDPASS
+    #define PARTICLESUNLITFORWARDPASS
 
     struct AttributesParticle//即URP语境下的appdata
     {
@@ -275,7 +275,7 @@
             half clipValue = step(absFragObjectPos.x,0.5);
             clipValue *= step(absFragObjectPos.y,0.5);
             clipValue *= step(absFragObjectPos.z,0.5);
-            half decalAlpha = Mh2Remap (abs(fragobjectPos.y),0.1,0.5,1,0);
+            half decalAlpha = NB_Remap (abs(fragobjectPos.y),0.1,0.5,1,0);
             decalAlpha *= clipValue;
             float2 decalUV = fragobjectPos.xz + 0.5;
 
@@ -559,7 +559,7 @@
            
                     _FresnelUnit.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0,input.VaryingsP_Custom1,input.VaryingsP_Custom2);;
                             
-                    fresnelValue = Mh2Remap(fresnelValue,_FresnelUnit.x,1,0,1);
+                    fresnelValue = NB_Remap(fresnelValue,_FresnelUnit.x,1,0,1);
                     UNITY_BRANCH
                     if(!CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_INVERT_ON))
                     {

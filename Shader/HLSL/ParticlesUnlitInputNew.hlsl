@@ -1,5 +1,5 @@
-#ifndef MH2_PARTICLESUNLITINPUT
-    #define MH2_PARTICLESUNLITINPUT
+#ifndef PARTICLESUNLITINPUT
+    #define PARTICLESUNLITINPUT
 
 
     
@@ -250,7 +250,7 @@
     {
         half4 outColor = 0;
             
-        #if defined(MH2_PARTICLE)//UI下使用ParticleBase不需要做 Gamma2Linear 转换
+        #if defined(PARTICLE)//UI下使用ParticleBase不需要做 Gamma2Linear 转换
         UNITY_FLATTEN
         if(CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON))
         {
@@ -296,7 +296,7 @@
         {
             // fade = saturate(far * ((sceneZ - near) - thisZ));
             float dist = sceneZ - thisZ;
-            fade = Mh2Remap(dist, near,far,0,1);
+            fade = NB_Remap(dist, near,far,0,1);
         }
         return fade;
     }
@@ -312,7 +312,7 @@
     half4 Intersect(float IntersectRadius,half4 IntersectColor,float sceneZ,float thisZ)
     {
         half fade = sceneZ - thisZ;
-        fade =1- Mh2Remap(fade,0,IntersectRadius,0,1);
+        fade =1- NB_Remap(fade,0,IntersectRadius,0,1);
 
         half4 c = 0;
         c.rgb = IntersectColor.rgb;
@@ -409,7 +409,7 @@
         // half aa = saturate(dot(normalize(Normal), (ViewDir)));
         half aa = dot(normalize(Normal), (ViewDir));
         aa = (aa+1)*0.5;
-        aa = Mh2Remap(aa,fresnelPos,1,0,1);
+        aa = NB_Remap(aa,fresnelPos,1,0,1);
         aa = lerp(aa, (1 - aa), Dire);
         half Out = pow( aa, Power);
         return Out;
@@ -831,7 +831,7 @@
 
     bool ignoreFresnel()
     {
-        #if defined(MH2_PARTICLE_BACKFACE_PASS)
+        #if defined(PARTICLE_BACKFACE_PASS)
         return  true;
         #endif
         return false;
