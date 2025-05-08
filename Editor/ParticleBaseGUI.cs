@@ -1803,7 +1803,8 @@ namespace UnityEditor
                 }
             }
             
-            //TODO:GetSetActiveTrailVertexStreams在部分版本不支持。
+            //从2022.3.11开始添加这个功能。
+            #if UNITY_2022_3_OR_NEWER && !(UNITY_2022_3_0 ||UNITY_2022_3_1||UNITY_2022_3_2||UNITY_2022_3_3||UNITY_2022_3_4||UNITY_2022_3_5||UNITY_2022_3_6||UNITY_2022_3_7||UNITY_2022_3_8||UNITY_2022_3_9||UNITY_2022_3_10)
             // Display a warning if any renderers have incorrect vertex streams
             string trailWarnings = "";
             List<ParticleSystemVertexStream> trailRendererStreams = new List<ParticleSystemVertexStream>();
@@ -1834,7 +1835,7 @@ namespace UnityEditor
                     }
                 }
             }
-            
+            #endif
             
             /*
             */
