@@ -54,14 +54,18 @@ namespace UnityEditor
             DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutTaOption,4,"TA调试", () => DrawTaOptions());
             
             //遍历整个场景，看哪些 粒子系统 用了这个材质。会填充m_RenderersUsingThisMaterial
-            for (int i = 0; i < mats.Count; i++)
+            if (mats.Count == 1)
             {
-                CacheRenderersUsingThisMaterial(mats[i], i);
+                CacheRenderersUsingThisMaterial(mats[0], 0);
             
 
                 if (!_uieffectEnabled)
                 {
-                    DoVertexStreamsArea(mats[i], m_RenderersUsingThisMaterial, i);//填充stream和stremList
+                    DoVertexStreamsArea(mats[0], m_RenderersUsingThisMaterial, 0);//填充stream和stremList
+                }
+                else
+                {
+                    mats[0].DisableKeyword("_CUSTOMDATA");
                 }
             }
             
@@ -1891,7 +1895,6 @@ namespace UnityEditor
             UV2_Texcoord1,
             UV3_Texcoord2
         }
-
         public void DrawUVModeSelect(int foldOutFlagBit, int foldOutFlagIndex,string label, int dataBitPos, int dataIndex,bool hasMap = true)
         {
             if (mats.Count != 1) return; //仅单选触发
@@ -1908,8 +1911,9 @@ namespace UnityEditor
             }
 
             // uvMode = (W9ParticleShaderFlags.UVMode)EditorGUILayout.Popup(new GUIContent(label), (int)uvMode,optinGUIContents);
-
+            
             EditorGUILayout.BeginHorizontal();
+            
 
             Rect rect = EditorGUILayout.GetControlRect();
             var labelRect = new Rect(rect.x + 2f, rect.y, rect.width - 2f, rect.height);
@@ -2026,33 +2030,27 @@ namespace UnityEditor
             UIEffectSprite,
             UIEffectBaseMap
         }
-
-        
-
         void SetUVModeByOldSettings()
         {
-            for (int i = 0; i < mats.Count; i++)
+            bool isTwril = shaderFlags[0].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UTWIRL_ON);
+            bool isPolar = shaderFlags[0].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_POLARCOORDINATES_ON);
+            bool baseMapNoPolar =
+                shaderFlags[0].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC);
+
+            for (int j = 0; j < 16; j++)
             {
-                bool isTwril = shaderFlags[i].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UTWIRL_ON);
-                bool isPolar = shaderFlags[i].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_POLARCOORDINATES_ON);
-                bool baseMapNoPolar =
-                    shaderFlags[i].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC);
-
-                for (int j = 0; j < 16; j++)
+                if (isTwril || isPolar)
                 {
-                    if (isTwril || isPolar)
+                    if (j == 0)
                     {
-                        if (j == 0)
+                        if (baseMapNoPolar)
                         {
-                            if (baseMapNoPolar)
-                            {
-                                shaderFlags[i].SetUVMode(W9ParticleShaderFlags.UVMode.DefaultUVChannel, j * 2);
-                                continue;
-                            }
+                            shaderFlags[0].SetUVMode(W9ParticleShaderFlags.UVMode.DefaultUVChannel, j * 2);
+                            continue;
                         }
-
-                        shaderFlags[i].SetUVMode(W9ParticleShaderFlags.UVMode.PolarOrTwirl, j * 2);
                     }
+
+                    shaderFlags[0].SetUVMode(W9ParticleShaderFlags.UVMode.PolarOrTwirl, j * 2);
                 }
             }
         }
@@ -2061,22 +2059,19 @@ namespace UnityEditor
             string colorPropertyName = null, bool drawScaleOffset = true, bool drawWrapMode = false,
             int flagBitsName = 0, int flagIndex = 2, Action<Texture> drawBlock = null)
         {
-            for (int i = 0; i < mats.Count; i++)
+            bool foldOutState = shaderFlags[0].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
+            AnimBool animBool = GetAnimBool(foldOutFlagBit, foldOutFlagIndex - 3, foldOutFlagIndex);
+            animBool.target = foldOutState;
+            helper.DrawTextureFoldOut(ref animBool, label, texturePropertyName, colorPropertyName, drawScaleOffset,
+                drawWrapMode, flagBitsName, flagIndex, drawBlock);
+            foldOutState = animBool.target;
+            if (foldOutState)
             {
-                bool foldOutState = shaderFlags[i].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                AnimBool animBool = GetAnimBool(foldOutFlagBit, foldOutFlagIndex - 3, foldOutFlagIndex);
-                animBool.target = foldOutState;
-                helper.DrawTextureFoldOut(ref animBool, label, texturePropertyName, colorPropertyName, drawScaleOffset,
-                    drawWrapMode, flagBitsName, flagIndex, drawBlock);
-                foldOutState = animBool.target;
-                if (foldOutState)
-                {
-                    shaderFlags[i].SetFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                }
-                else
-                {
-                    shaderFlags[i].ClearFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                }
+                shaderFlags[0].SetFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
+            }
+            else
+            {
+                shaderFlags[0].ClearFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
             }
         }
 
@@ -2085,42 +2080,36 @@ namespace UnityEditor
             int flagIndex = 0, string shaderKeyword = null, string shaderPassName = null, bool isIndentBlock = true, FontStyle fontStyle = FontStyle.Normal,
             Action<bool> drawBlock = null,Action<bool> drawEndChangeCheck = null)
         {
-            for (int i = 0; i < mats.Count; i++)
+            bool foldOutState = shaderFlags[0].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
+            AnimBool animBool = GetAnimBool(foldOutFlagBit, foldOutFlagIndex - 3, foldOutFlagIndex); //foldOut里的第一组。
+            animBool.target = foldOutState;
+            helper.DrawToggleFoldOut(ref animBool, label, propertyName, flagBitsName, flagIndex, shaderKeyword,
+                shaderPassName, isIndentBlock, fontStyle, drawBlock, drawEndChangeCheck);
+            foldOutState = animBool.target;
+            if (foldOutState)
             {
-                bool foldOutState = shaderFlags[i].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                AnimBool animBool = GetAnimBool(foldOutFlagBit, foldOutFlagIndex - 3, foldOutFlagIndex); //foldOut里的第一组。
-                animBool.target = foldOutState;
-                helper.DrawToggleFoldOut(ref animBool, label, propertyName, flagBitsName, flagIndex, shaderKeyword,
-                    shaderPassName, isIndentBlock, fontStyle, drawBlock, drawEndChangeCheck);
-                foldOutState = animBool.target;
-                if (foldOutState)
-                {
-                    shaderFlags[i].SetFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                }
-                else
-                {
-                    shaderFlags[i].ClearFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                }
+                shaderFlags[0].SetFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
+            }
+            else
+            {
+                shaderFlags[0].ClearFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
             }
         }
 
         public void DrawBigBlockFoldOut(int foldOutFlagBit,int foldOutFlagIndex ,string label, Action drawBlock)
         {
-            for (int i = 0; i < mats.Count; i++)
+            bool foldOutState = shaderFlags[0].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
+            AnimBool animBool = GetAnimBool(foldOutFlagBit, foldOutFlagIndex - 3, foldOutFlagIndex);
+            animBool.target = foldOutState;
+            helper.DrawBigBlockFoldOut(ref animBool, label, drawBlock);
+            foldOutState = animBool.target;
+            if (foldOutState)
             {
-                bool foldOutState = shaderFlags[i].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                AnimBool animBool = GetAnimBool(foldOutFlagBit, foldOutFlagIndex - 3, foldOutFlagIndex);
-                animBool.target = foldOutState;
-                helper.DrawBigBlockFoldOut(ref animBool, label, drawBlock);
-                foldOutState = animBool.target;
-                if (foldOutState)
-                {
-                    shaderFlags[i].SetFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                }
-                else
-                {
-                    shaderFlags[i].ClearFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
-                }
+                shaderFlags[0].SetFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
+            }
+            else
+            {
+                shaderFlags[0].ClearFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
             }
         }
 
