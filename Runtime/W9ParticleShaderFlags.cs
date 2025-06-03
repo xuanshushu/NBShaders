@@ -133,6 +133,8 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_1_UV_FROM_MESH= 1 << 21;//3D条件下，如果不是来源于Mesh，就默认来源于粒子。
     public const int FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE= 1 << 22;//3D条件下，如果不是来源于Mesh，就默认来源于粒子。
     public const int FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM= 1 << 23;//3D条件下，如果不是来源于Mesh，就默认来源于粒子。
+    public const int FLAG_BIT_PARTICLE_1_MAINTEX_CONTRAST= 1 << 24;
+    public const int FLAG_BIT_PARTICLE_1_VERTEXOFFSET_START_FROM_ZERO= 1 << 25;
     
     
     public const int FLAG_BIT_WRAPMODE_BASEMAP= 1 << 0;
@@ -180,6 +182,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutDepthOutline= 1 << 28;
     public const int foldOutVertexOffset= 1 << 29;
     public const int foldOutParallexMapping= 1 << 30;
+    public const int foldOutMianTexContrast= 1 << 31;
     // public const int foldOutPortal= 1 << 31;
     
     
@@ -252,6 +255,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAGBIT_POS_2_CUSTOMDATA_DISSOLVE_NOISE2_OFFSET_Y = 3*4;
     public const int FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_X= 4*4;
     public const int FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_Y= 5*4;
+    public const int FLAGBIT_POS_2_CUSTOMDATA_MAINTEX_CONTRAST= 6*4;
     
 
     public const int isCustomDataBit = 1 << 3;

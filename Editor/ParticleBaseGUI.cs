@@ -206,6 +206,17 @@ namespace UnityEditor
                         helper.DrawSlider("色相","_HueShift",0,1);
                         DrawCustomDataSelect("色相自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_HUESHIFT,0);
                 });
+                
+                        
+                DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitSaturability,3,"主贴图饱和度","_ChangeSaturability_Toggle",W9ParticleShaderFlags.FLAG_BIT_SATURABILITY_ON,isIndentBlock:true,drawBlock:(isToggle)=>{
+                    helper.DrawSlider("饱和度","_Saturability",0,1);
+                    DrawCustomDataSelect("饱和度强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE,1);
+                });
+                
+                DrawToggleFoldOut(W9ParticleShaderFlags.foldOutMianTexContrast,3,"主贴图对比度","_Contrast_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MAINTEX_CONTRAST,1,isIndentBlock:true,drawBlock:(isToggle)=>{
+                    helper.DrawSlider("对比度","_Contrast",0,5);
+                    DrawCustomDataSelect("对比度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_MAINTEX_CONTRAST,2);
+                });
             };
 
             if (!_uieffectEnabled || _meshSourceMode == MeshSourceMode.UIEffectBaseMap)
@@ -281,11 +292,6 @@ namespace UnityEditor
             
             }
             // helper.DrawToggle("使用3U作为UV来源","_UseUV1_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_USETEXCOORD2);
-            
-            DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitSaturability,3,"饱和度调整","_ChangeSaturability_Toggle",W9ParticleShaderFlags.FLAG_BIT_SATURABILITY_ON,isIndentBlock:true,drawBlock:(isToggle)=>{
-                    helper.DrawSlider("饱和度","_Saturability",0,1);
-                    DrawCustomDataSelect("饱和度强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE,1);
-            });
             
      
       
@@ -671,6 +677,7 @@ namespace UnityEditor
                         helper.DrawVector4In2Line("_VertexOffset_Vec","顶点偏移动画");
                         helper.DrawVector4Componet("顶点偏移强度","_VertexOffset_Vec","z",false);
                         DrawCustomDataSelect("顶点扰动强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEXOFFSET_INTENSITY,1);
+                        helper.DrawToggle("顶点偏移从零开始","_VertexOffset_StartFromZero",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_VERTEXOFFSET_START_FROM_ZERO,1);
                         helper.DrawToggle("顶点偏移使用法线方向","_VertexOffset_NormalDir_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_VERTEX_OFFSET_NORMAL_DIR,isIndentBlock:false,drawBlock:
                             isToggle =>
                             {
