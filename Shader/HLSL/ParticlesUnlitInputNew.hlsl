@@ -16,6 +16,7 @@
     // #endif
     half _Saturability;
     half _HueShift;
+    half _Contrast;
     half _AlphaAll;
     float4 _BaseMap_ST;
     float4 _BaseMap_AnimationSheetBlend_ST;//20240826 暂时只是给AnimationSheetHelper用。
@@ -758,7 +759,11 @@
         {
             vertexOffsetSample = SAMPLE_TEXTURE2D_LOD(_VertexOffset_Map,sampler_linear_repeat,uv,0);
         }
-        vertexOffsetSample = vertexOffsetSample*2-1;
+
+        if (!CheckLocalFlags1(FLAG_BIT_PARTICLE_1_VERTEXOFFSET_START_FROM_ZERO))
+        {
+            vertexOffsetSample = vertexOffsetSample*2-1;
+        }
 
         half3 finalPos;
      
