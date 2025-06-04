@@ -217,7 +217,7 @@ namespace UnityEditor
                     DrawCustomDataSelect("饱和度强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE,1);
                 });
                 
-                DrawToggleFoldOut(W9ParticleShaderFlags.foldOutMianTexContrast,3,"主贴图对比度","_Contrast_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MAINTEX_CONTRAST,1,isIndentBlock:true,drawBlock:(isToggle)=>{
+                DrawToggleFoldOut(W9ParticleShaderFlags.foldOutMianTexContrast,4,"主贴图对比度","_Contrast_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MAINTEX_CONTRAST,1,isIndentBlock:true,drawBlock:(isToggle)=>{
                     helper.DrawSlider("对比度","_Contrast",0,5);
                     DrawCustomDataSelect("对比度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_MAINTEX_CONTRAST,2);
                 });

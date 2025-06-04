@@ -182,7 +182,6 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutDepthOutline= 1 << 28;
     public const int foldOutVertexOffset= 1 << 29;
     public const int foldOutParallexMapping= 1 << 30;
-    public const int foldOutMianTexContrast= 1 << 31;
     // public const int foldOutPortal= 1 << 31;
     
     
@@ -204,6 +203,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutZOffset= 1 << 21;
     public const int foldOutCustomStencilTest= 1 << 22;
     public const int foldOutTaOption = 1 << 23;
+    public const int foldOutMianTexContrast= 1 << 24;
 
 
     #region CustomDataCodes
