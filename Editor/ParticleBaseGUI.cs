@@ -1222,7 +1222,7 @@ namespace UnityEditor
                 
             });
 
-            if (!isCustomedStencil)
+            if (!isCustomedStencil && !_uieffectEnabled)
             {
                 for (int i = 0; i < mats.Count; i++)
                 {
