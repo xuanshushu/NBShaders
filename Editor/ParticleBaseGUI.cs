@@ -232,6 +232,15 @@ namespace UnityEditor
                     helper.DrawSlider("对比度","_Contrast",0,5);
                     DrawCustomDataSelect("对比度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_MAINTEX_CONTRAST,2);
                 });
+                
+                DrawToggleFoldOut(W9ParticleShaderFlags.foldOutMainTexColorRefine,4,"主贴图颜色修正","_BaseMapColorRefine_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MAINTEX_COLOR_REFINE,1,isIndentBlock:true,drawBlock:
+                    (isToggle) =>
+                    {
+                        helper.DrawVector4Componet("A:主颜色相乘","_BaseMapColorRefine","x",false);
+                        helper.DrawVector4Componet("B:主颜色Power","_BaseMapColorRefine","y",false);
+                        helper.DrawVector4Componet("B:主颜色Power后相乘","_BaseMapColorRefine","z",false);
+                        helper.DrawVector4Componet("A/B线性差值","_BaseMapColorRefine","w",true,0f,1f);
+                    });
             };
 
             if (!_uieffectEnabled || _uiParticleEnabled || _meshSourceMode == MeshSourceMode.UIEffectBaseMap)
