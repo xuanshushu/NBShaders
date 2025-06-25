@@ -718,15 +718,15 @@
         
         
 
-        #ifndef _SCREEN_DISTORT_MODE
-            result.rgb = result.rgb * alpha;
-        #endif
+        // #ifndef _SCREEN_DISTORT_MODE
+        //     result.rgb = result.rgb * alpha;
+        // #endif
         
-            UNITY_FLATTEN
-            if(CheckLocalFlags(FLAG_BIT_PARTICLE_LINEARTOGAMMA_ON))
-            {
-                result.rgb = LinearToGammaSpace(result.rgb);
-            }
+        UNITY_FLATTEN
+        if(CheckLocalFlags(FLAG_BIT_PARTICLE_LINEARTOGAMMA_ON))
+        {
+            result.rgb = LinearToGammaSpace(result.rgb);
+        }
         
 
         alpha *= _AlphaAll;
