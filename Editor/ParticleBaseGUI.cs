@@ -49,6 +49,12 @@ namespace UnityEditor
             
             DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMeshOption,3,"模式设置", () => DrawMeshOptions());
             DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMainTexOption,3,"主贴图功能", () => DrawMainTexOptions());
+
+            if (!_uieffectEnabled)
+            {
+                DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitLightOption,4,"光照功能", () => DrawLightOptions());
+            }
+            
             DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitBaseOption,3,"基本全局功能", () => DrawBaseOptions());
             DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitFeatureOption,3,"特别功能", () => DrawFeatureOptions());
             DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutTaOption,4,"TA调试", () => DrawTaOptions());
@@ -371,6 +377,27 @@ namespace UnityEditor
             {
                 helper.GetProperty("_fogintensity").floatValue = 0;
             }
+        }
+
+        private FxLightMode _fxLightMode;
+        public void DrawLightOptions()
+        {
+            helper.DrawPopUp("光照类型","_FxLightMode",_fxLightModeNames,drawBlock:mode=>
+            {
+                _fxLightMode = (FxLightMode)mode;
+            });
+            bool bumpMapFromMainTexUV = helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
+            DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBumpTex,4,"法线贴图","_BumpTex",drawWrapMode:!bumpMapFromMainTexUV,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,drawScaleOffset: !bumpMapFromMainTexUV,drawBlock:
+                theBumpmap =>
+                {
+                    if (!bumpMapFromMainTexUV)
+                    {
+                        DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeBumpTex,4,"法线贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,0,theBumpmap);
+                    }
+                    //在DoAfterDraw会执行SetKeyword的逻辑。
+                });
+            helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
+            helper.DrawSlider("法线强度","_BumpScale",-5f,5f);
         }
 
         public void DrawFeatureOptions()
@@ -1233,6 +1260,16 @@ namespace UnityEditor
                     isCustomedStencil = isTogle;
                 
             });
+            
+            DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitShaderKeyword,4,"已开启Keyword",drawBlock: isTogle =>
+            {
+                string[] shaderKeywords = mats[0].shaderKeywords;
+                foreach (string keyword in shaderKeywords)
+                {
+                    EditorGUILayout.LabelField(keyword);
+                }
+
+            });
 
             if (!isCustomedStencil && !_uieffectEnabled)
             {
@@ -1285,6 +1322,21 @@ namespace UnityEditor
             Color = 0,
             Fade = 1
         }
+        
+        public enum FxLightMode
+        {
+            UnLit,
+            BlinnPhong,
+            PBR,
+            SixWay
+        }
+        private string[] _fxLightModeNames =
+        {
+            "默认无光(Unlit)",
+            "简单光照(BlinnPhong)",
+            "高级光照(PBR)",
+            "六面光照(SixWay)"
+        };
 
         public string[] transparentModeNames =
         {
@@ -1464,6 +1516,34 @@ namespace UnityEditor
                             index: 1);
                         break;
                 }
+                
+                switch (_fxLightMode)
+                {
+                    case FxLightMode.UnLit:
+                        mats[i].EnableKeyword("_FX_LIGHT_MODE_UNLIT");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        break;
+                    case FxLightMode.BlinnPhong:
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
+                        mats[i].EnableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        break;
+                    case FxLightMode.PBR:
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].EnableKeyword("_FX_LIGHT_MODE_PBR");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        break;
+                    case FxLightMode.SixWay:
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
+                        mats[i].EnableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        break;
+                }
 
                 if (!shaderFlags[i].CheckIsUVModeOn(W9ParticleShaderFlags.UVMode.SpecialUVChannel))
                 {
@@ -1582,6 +1662,16 @@ namespace UnityEditor
                         shaderFlags[i].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UNSCALETIME_ON);
                         shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_SCRIPTABLETIME_ON);
                         break;
+                }
+
+                bool hasBumpMap = mats[i].HasTexture("_BumpTex");
+                if (hasBumpMap)
+                {
+                    mats[i].EnableKeyword("_NORMALMAP");
+                }
+                else
+                {
+                    mats[i].DisableKeyword("_NORMALMAP");
                 }
             }
         }

@@ -137,6 +137,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_1_VERTEXOFFSET_START_FROM_ZERO= 1 << 25;
     public const int FLAG_BIT_PARTICLE_1_VERTEXOFFSET_MASKMAP= 1 << 26;
     public const int FLAG_BIT_PARTICLE_1_MAINTEX_COLOR_REFINE= 1 << 27;
+    public const int FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX= 1 << 28;
     
     
     public const int FLAG_BIT_WRAPMODE_BASEMAP= 1 << 0;
@@ -153,6 +154,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_WRAPMODE_MASKMAP3= 1 << 11;
     public const int FLAG_BIT_WRAPMODE_NOISE_MASKMAP= 1 << 12;
     public const int FLAG_BIT_WRAPMODE_VERTEXOFFSET_MASKMAP= 1 << 13;
+    public const int FLAG_BIT_WRAPMODE_BUMPTEX= 1 << 14;
 
     public const int foldOutBitMeshOption = 1 << 0;
     public const int foldOutBitMainTexOption = 1 << 1;
@@ -202,6 +204,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutBit2UVModeColorBlendMap = 1 << 9;
     public const int foldOutBit2UVModeVertexOffsetMap = 1 << 10;
     public const int foldOutBit2UVModeVertexOffsetMaskMap = 1 << 11;
+    public const int foldOutBit2UVModeBumpTex = 1 << 12;
     
     //留一些位置给以后可能会增加的贴图。
     public const int foldOutPortal= 1 << 20;
@@ -211,6 +214,9 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutMianTexContrast= 1 << 24;
     public const int foldOutVertexOffsetMask= 1 << 25;
     public const int foldOutMainTexColorRefine= 1 << 26;
+    public const int foldOutBitLightOption= 1 << 27;
+    public const int foldOutBitShaderKeyword= 1 << 28;
+    public const int foldOutBitBumpTex= 1 << 29;
 
 
     #region CustomDataCodes
@@ -598,6 +604,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP = 9 * 2;
     public const int FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MAP = 10 * 2;
     public const int FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MASKMAP = 11 * 2;
+    public const int FLAG_BIT_UVMODE_POS_0_BUMPMAP = 12 * 2;
 
     public int GetUVModeFlagPropID(int flagIndex)
     {

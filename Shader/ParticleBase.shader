@@ -75,6 +75,12 @@
     	_CylinderMatrix3("圆柱偏移矩阵3",Vector) = (0,0,0,0)
         
         _Cutoff ("裁剪位置", float) = 0
+    	
+    	//--------------光照部分-------------
+    	_FxLightMode("灯光模式",Float) = 0
+    	_BumpScale("Scale", Float) = 1.0
+        _BumpTex("Normal Map", 2D) = "bump" {}
+    	_BumpTexFollowMainTexUVToggle("法线跟随主贴图UV",Float) = 0
 
         //时间缩放影响开关----------
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
@@ -188,8 +194,6 @@
         [HideInInspector] _ZWrite("__ZWrite-ignore", Float) = 0 //默认值LEqual
         // [HideInInspector] _ZTestt ("__ztestt", Float) = 4.0//雨轩：注释掉了。。。这是个什么鬼。。。
 
-
-
         _CustomStencilTest ("__CustomStencilTest-ignore", Float) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)] _StencilComp ("__StencilComp-ignore", Float) = 8
         _Stencil("Stencil ID-ignore", Float) = 0
@@ -240,8 +244,6 @@
         [HideInInspector] _IntersectColor("__IntersectColor_ignore",Color) = (1,1,1,1)
         
         [HideInInspector] _ScreenDistortModeToggle("_ScreenDistortModeToggle",Float) = 0
-        
-        
         
         // Editmode props  编辑模式下的PropFlags？
         [HideInInspector] _QueueBias ("Queue偏移_QueueBias", Float) =0
@@ -330,6 +332,9 @@
             #pragma target 4.5
             #pragma exclude_renderers d3d11_9x
             #pragma exclude_renderers d3d9
+            
+            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
@@ -345,9 +350,12 @@
             //后续Test类的关键字要找机会排除
             #pragma shader_feature_local _DISSOLVE_EDITOR_TEST
             #pragma  shader_feature_local  _COLORMAPBLEND//颜色渐变
+
+            //将光照和UI混用，达到节省Keywords的目的。
+            #pragma multi_compile _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS//UI 2D遮罩
+            // #pragma multi_compile _ _UIPARTICLE_ON//用于UIParticle组件动态更改参数//暂时注释掉，觉得没什么意义
+            #pragma multi_compile _ SOFT_UI_FRAME EVALUATE_SH_MIXED EVALUATE_SH_VERTEX//用于UI软蒙版
             
-            #pragma multi_compile_local _ UNITY_UI_CLIP_RECT//UI 2D遮罩
-            // #pragma shader_feature_local _ _CH_XIANXING _CH_JINGXIANG  _CH_SELF   //线性擦除  径向擦除  mask擦除
             #pragma shader_feature_local _PARCUSTOMDATA_ON
 
             //用于特效层关键字
@@ -356,8 +364,6 @@
             #pragma shader_feature_local _ FRESNEL_CUBEMAP FRESNEL_REFLECTIONPROBE
            
             
-            // #pragma multi_compile _ _UIPARTICLE_ON//用于UIParticle组件动态更改参数//暂时注释掉，觉得没什么意义
-            #pragma multi_compile _ SOFT_UI_FRAME//用于UI软蒙版
             // -------------------------------------
             // Particle Keywords
             //#pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
@@ -379,6 +385,12 @@
             #pragma shader_feature_local _PARALLAX_MAPPING
 
             #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
+
+            //LIGHTING
+            #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
+            #pragma shader_feature_local _ _NORMALMAP
+            #pragma shader_feature_local _ _MATCAP
+            
             
             // -------------------------------------
             // Unity defined keywords
@@ -404,7 +416,6 @@
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
             
             #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
-            #include "HLSL/ParticlesUnlitInputNew.hlsl"
             #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"
             
             ENDHLSL
@@ -429,6 +440,9 @@
             
             // -------------------------------------
             // Material Keywords
+ 
+            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            
             #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
             #pragma shader_feature_local _ _MASKMAP_ON
             // #pragma shader_feature_local _MASKMAP
@@ -441,9 +455,9 @@
             #pragma shader_feature_local _DISSOLVE
                         //后续Test类的关键字要找机会排除
             #pragma shader_feature_local _DISSOLVE_EDITOR_TEST
-            #pragma  shader_feature_local  _COLORMAPBLEND//颜色渐变
+            #pragma shader_feature_local  _COLORMAPBLEND//颜色渐变
             
-            #pragma multi_compile_local _ UNITY_UI_CLIP_RECT//UI 2D遮罩
+            #pragma multi_compile_local _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS //UI 2D遮罩
             // #pragma shader_feature_local _ _CH_XIANXING _CH_JINGXIANG  _CH_SELF   //线性擦除  径向擦除  mask擦除
             #pragma shader_feature_local _PARCUSTOMDATA_ON
 
@@ -454,7 +468,7 @@
 
             
             // #pragma multi_compile _ _UIPARTICLE_ON//用于UIParticle组件动态更改参数//暂时注释掉，觉得没什么意义
-            #pragma multi_compile _ SOFT_UI_FRAME//用于UI软蒙版
+            #pragma multi_compile _ SOFT_UI_FRAME EVALUATE_SH_MIXED EVALUATE_SH_VERTEX//用于UI软蒙版
             // -------------------------------------
             // Particle Keywords
             //#pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
@@ -477,7 +491,10 @@
 
             #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
 
-
+            //LIGHTING
+            #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
+            #pragma shader_feature_local _ _NORMALMAP
+            #pragma shader_feature_local _ _MATCAP
             
             // -------------------------------------
             // Unity defined keywords
@@ -496,10 +513,11 @@
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+
+
+            
             
             #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
-
-            #include "HLSL/ParticlesUnlitInputNew.hlsl"
             #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"
             
             

@@ -1,89 +1,7 @@
 #ifndef PARTICLESUNLITFORWARDPASS
     #define PARTICLESUNLITFORWARDPASS
+    #include "HLSL/ParticlesUnlitInputNew.hlsl"
 
-    struct AttributesParticle//即URP语境下的appdata
-    {
-        float4 vertex: POSITION;
-        float3 normalOS: NORMAL;
-        half4 color: COLOR;
-        #if defined(_FLIPBOOKBLENDING_ON)
-            float4 texcoords: TEXCOORD0;       //texcoords.zw就是粒子那边新建的UV2
-            float3 texcoordBlend: TEXCOORD3;//注意，假如需要UI支持，則Canvas要開放相關Channel
-        #else
-            float4 texcoords: TEXCOORD0;
-        #endif
-
-        #ifdef _PARALLAX_MAPPING
-            float4 tangentOS     : TANGENT;
-        #endif
-        
-        float4 Custom1: TEXCOORD1;
-        float4 Custom2: TEXCOORD2;
-        
-        UNITY_VERTEX_INPUT_INSTANCE_ID
-    };
-    
-    struct VaryingsParticle//即URP语境下的v2f
-    {
-        float4 clipPos: SV_POSITION;
-        
-        half4 color: COLOR;
-        float4 texcoord: TEXCOORD0;  // 主帖图 和 mask
-        
-        #if defined (_EMISSION)   || defined(_COLORMAPBLEND)
-            float4 emissionColorBlendTexcoord: TEXCOORD1;  // 流光
-        #endif
-
-        #ifdef _NOISEMAP
-            float4 noisemapTexcoord:TEXCOORD2;//Noise
-        #endif
- 
-        #if defined(_DISSOLVE) 
-
-            float4 dissolveTexcoord:TEXCOORD15;
-            float4 dissolveNoiseTexcoord: TEXCOORD5;
-
-        #endif
-
-        
-        float4 positionWS: TEXCOORD3;
-        float4 positionOS: TEXCOORD12;
-        
-        float4 texcoord2AndSpecialUV: TEXCOORD6;  // UV2和SpecialUV
-
-        float4 positionNDC: TEXCOORD7;
-        
-        
-        float4 VaryingsP_Custom1: TEXCOORD8;
-        float4 VaryingsP_Custom2: TEXCOORD9;
-        
-
-        float4 normalWSAndAnimBlend: TEXCOORD10;
-        
-        float3 fresnelViewDir :TEXCOORD11;
-        
-        float3 viewDirWS :TEXCOORD13;
-        float4 texcoordMaskMap2 : TEXCOORD14;
-
-        #ifdef _PARALLAX_MAPPING
-          half3  tangentViewDir : TEXCOORD16;
-        #endif
-        
-        UNITY_VERTEX_INPUT_INSTANCE_ID
-        UNITY_VERTEX_OUTPUT_STEREO
-    };
-
-    bool isProcessUVInFrag()
-    {
-        if(CheckLocalFlags(FLAG_BIT_PARTICLE_POLARCOORDINATES_ON) || CheckLocalFlags(FLAG_BIT_PARTICLE_UTWIRL_ON)) 
-        {
-            return true;
-        }
-        #if defined(_DEPTH_DECAL) || defined(_PARALLAX_MAPPING) || defined(_SCREEN_DISTORT_MODE)
-            return true;
-        #endif
-        return false;
-    }
     
     
     ///////////////////////////////////////////////////////////////////////////////
@@ -152,6 +70,22 @@
 
         output.viewDirWS = GetWorldSpaceNormalizeViewDir(output.positionWS.xyz);
         output.normalWSAndAnimBlend.xyz = TransformObjectToWorldNormal(input.normalOS.xyz);
+
+        #ifdef _NORMALMAP
+            real sign = input.tangentOS.w * GetOddNegativeScale();
+            half3 tangentWS = TransformObjectToWorldDir(input.tangentOS.xyz);
+            output.tangentWS = half4(tangentWS,sign);
+        #endif
+        
+
+
+        #ifndef _FX_LIGHT_MODE_UNLIT
+            OUTPUT_SH(output.normalWSAndAnimBlend.xyz, output.vertexSH);
+            #ifdef _ADDITIONAL_LIGHTS_VERTEX
+            output.vertexLight = VertexLighting(output.positionWS.xyz, output.normalWSAndAnimBlend.xyz);
+            #endif
+        #endif
+        
         
         
         UNITY_FLATTEN
@@ -192,6 +126,11 @@
            
             output.texcoordMaskMap2.xy = particleUVs.maskMap2UV;
             output.texcoordMaskMap2.zw = particleUVs.maskMap3UV;
+            #ifdef _NORMALMAP
+                output.bumpTexTexcoord.xy = particleUVs.bumpTexUV;
+
+            #endif
+            
             #if defined (_EMISSION)   || defined(_COLORMAPBLEND)
                 output.emissionColorBlendTexcoord.xy = particleUVs.emissionUV;
                 output.emissionColorBlendTexcoord.zw = particleUVs.colorBlendUV;
@@ -307,6 +246,7 @@
         float2 dissolve_uv;
         float2 dissolve_mask_uv;
         float4 dissolve_noise_uv;
+        float2 BumpTex_uv;
 
         //如果同时在粒子系统里开启序列帧融帧和特殊UV通道模式。
         
@@ -334,6 +274,7 @@
             noiseMap_uv = particleUVs.noiseMapUV;
             noiseMaskMap_uv = particleUVs.noiseMaskMapUV;
             dissolve_noise_uv = float4(particleUVs.dissolve_noise1_UV,particleUVs.dissolve_noise2_UV);
+            BumpTex_uv = particleUVs.bumpTexUV;
             
         }
         else
@@ -341,6 +282,11 @@
             MaskMapuv = input.texcoord.zw;
             MaskMapuv2 = input.texcoordMaskMap2.xy;
             MaskMapuv3 = input.texcoordMaskMap2.zw;
+            
+            #ifdef _NORMALMAP
+            BumpTex_uv = input.bumpTexTexcoord.xy;
+            #endif
+            
             #ifdef _NOISEMAP
                 noiseMap_uv = input.noisemapTexcoord.xy;
                 noiseMaskMap_uv = input.noisemapTexcoord.zw;
@@ -465,6 +411,61 @@
             half3 colorB = pow(result.rgb,_BaseMapColorRefine.y)*_BaseMapColorRefine.z;
             result.rgb = lerp(colorA,colorB,_BaseMapColorRefine.w);
         }
+        
+        half3 normalTS = half3(0, 0, 1);//TODO
+
+        if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX))
+        {
+            BumpTex_uv = uv;
+        }
+
+        #ifdef _NORMALMAP
+        
+        half4 normalMapSample = SampleTexture2DWithWrapFlags(_BumpTex,BumpTex_uv,FLAG_BIT_WRAPMODE_BUMPTEX);
+        normalTS = UnpackNormalRGB(half4(normalMapSample.xy,1,0),_BumpScale);
+
+        #endif
+        
+
+        //光照模式
+        #ifndef _FX_LIGHT_MODE_UNLIT
+    
+            InputData inputData;
+            InitializeInputData(input, normalTS, inputData);
+            half metallic = 0;
+            half3 specular = 0;
+            half smoothness = 0.5;
+            half occlusion = 1;
+            half3 pbrEmission = 0;
+           // return half4(inputData.bakedGI,1);
+            #ifdef _FX_LIGHT_MODE_BLINN_PHONG
+            half4 specularGloss = half4(1,1,1,0.5);
+            half4 blinnPhong = UniversalFragmentBlinnPhong(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
+            result = blinnPhong.rgb;
+            alpha = blinnPhong.a;
+            #elif _FX_LIGHT_MODE_PBR
+            half4 pbr = UniversalFragmentPBR(inputData,result.rgb,  metallic,  specular, smoothness,  occlusion,  pbrEmission, alpha);
+            result = pbr.rgb;
+            alpha = pbr.a;
+            #elif _FX_LIGHT_MODE_SIX_WAY
+            #endif
+            
+            #ifdef _ADDITIONAL_LIGHTS_VERTEX
+            result.rgb *= input.vertexLight;
+            #endif
+
+            input.normalWSAndAnimBlend.xyz = inputData.normalWS;
+        
+        #else
+            #ifdef _NORMALMAP
+            float sgn = input.tangentWS.w;      // should be either +1 or -1
+            float3 bitangent = sgn * cross(input.normalWSAndAnimBlend.xyz, input.tangentWS.xyz);
+            half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWSAndAnimBlend.xyz);
+            input.normalWSAndAnimBlend.xyz = TransformTangentToWorld(normalTS, tangentToWorld);
+            #endif
+        #endif
+        
+        
         
         
         
@@ -736,6 +737,8 @@
         clip(color.a - _Cutoff);
 
         #endif
+
+        color = min(color,1000);
         
         return color;
     }

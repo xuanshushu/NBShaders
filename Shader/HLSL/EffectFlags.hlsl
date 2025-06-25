@@ -63,6 +63,7 @@
     #define FLAG_BIT_PARTICLE_1_VERTEXOFFSET_START_FROM_ZERO (1 << 25)
     #define FLAG_BIT_PARTICLE_1_VERTEXOFFSET_MASKMAP (1 << 26)
     #define FLAG_BIT_PARTICLE_1_MAINTEX_COLOR_REFINE (1 << 27)
+    #define FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX (1 << 28)
     
  
     //WrapMode不能够超过16位（因为会占用x和x+16两个bit位）
@@ -80,6 +81,7 @@
     #define FLAG_BIT_WRAPMODE_MASKMAP3 (1 << 11)
     #define FLAG_BIT_WRAPMODE_NOISE_MASKMAP (1 << 12)
     #define FLAG_BIT_WRAPMODE_VERTEXOFFSET_MASKMAP (1 << 13)
+    #define FLAG_BIT_WRAPMODE_BUMPTEX (1 << 14)
 
     #define FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X (0*4)
     #define FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y (1*4)
@@ -128,6 +130,7 @@
     #define FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP (9*2)
     #define FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MAP (10*2)
     #define FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MASKMAP (11*2)
+    #define FLAG_BIT_UVMODE_POS_0_BUMPTEX (12*2)
 
     float GetCustomData(uint flagProperty,int flagPos,float orignValue,half4 cutstomData1,half4 customData2)
     {

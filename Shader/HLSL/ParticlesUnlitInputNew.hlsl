@@ -41,6 +41,9 @@
     half4 _EmissionMapColor;
     half _EmissionMapColorIntensity;
 
+    float4 _BumpTex_ST;
+    half _BumpScale;
+
     half _EdgeFade;
     half4 _NoiseOffset;
     half4 _EmissionMapUVOffset;
@@ -264,6 +267,8 @@
     Texture2D _MaskMap;
     Texture2D _MaskMap2;
     Texture2D _MaskMap3;
+    Texture2D _BumpTex;
+
 
     #ifdef _SCREEN_DISTORT_MODE
         Texture2D _ScreenColorCopy1;
@@ -568,6 +573,7 @@
         float2 colorBlendUV;
         float2 noiseMapUV;
         float2 noiseMaskMapUV;
+        float2 bumpTexUV;
     };
 
     BaseUVs ProcessBaseUVs(float4 meshTexcoord0, float2 specialUVInTexcoord3,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,float3 postionOS)
@@ -680,6 +686,14 @@
             particleUVs.mainTexUV = UVOffsetAnimaiton(particleUVs.mainTexUV,_BaseMapMaskMapOffset.xy);
             
         #endif
+
+        #if defined(_NORMALMAP)
+            float2 bumpTexUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_BUMPTEX,baseUVs);
+            bumpTexUV = TRANSFORM_TEX(bumpTexUV, _BumpTex);
+            particleUVs.bumpTexUV = bumpTexUV;
+        
+        #endif
+        
         
 
         #if defined(_MASKMAP_ON)
@@ -724,6 +738,7 @@
         
         #endif
 
+        
         #if defined(_EMISSION)
             float2 emissionUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_EMISSION_MAP,baseUVs);
             particleUVs.emissionUV = ParticleUVCommonProcess(emissionUV,_EmissionMap_ST,_EmissionMapUVOffset.xy,_EmissionMapUVRotation);
@@ -985,4 +1000,175 @@
 
         return finalTexCoords;
     }
+
+    struct AttributesParticle//即URP语境下的appdata
+    {
+        float4 vertex: POSITION;
+        float3 normalOS: NORMAL;
+        half4 color: COLOR;
+        #if defined(_FLIPBOOKBLENDING_ON)
+            float4 texcoords: TEXCOORD0;       //texcoords.zw就是粒子那边新建的UV2
+            float3 texcoordBlend: TEXCOORD3;//注意，假如需要UI支持，則Canvas要開放相關Channel
+        #else
+            float4 texcoords: TEXCOORD0;
+        #endif
+
+        #if defined(_PARALLAX_MAPPING) || defined(_NORMALMAP)
+            float4 tangentOS     : TANGENT;
+        #endif
+        
+        float4 Custom1: TEXCOORD1;
+        float4 Custom2: TEXCOORD2;
+        
+        UNITY_VERTEX_INPUT_INSTANCE_ID
+    };
+    
+    struct VaryingsParticle//即URP语境下的v2f
+    {
+        float4 clipPos: SV_POSITION;
+        
+        half4 color: COLOR;
+        float4 texcoord: TEXCOORD0;  // 主帖图 和 mask
+        
+        #if defined (_EMISSION)   || defined(_COLORMAPBLEND)
+            float4 emissionColorBlendTexcoord: TEXCOORD1;  // 流光
+        #endif
+
+        #ifdef _NOISEMAP
+            float4 noisemapTexcoord:TEXCOORD2;//Noise
+        #endif
+ 
+        #if defined(_DISSOLVE) 
+
+            float4 dissolveTexcoord:TEXCOORD15;
+            float4 dissolveNoiseTexcoord: TEXCOORD5;
+
+        #endif
+
+        
+        float4 positionWS: TEXCOORD3;
+        float4 positionOS: TEXCOORD12;
+        
+        float4 texcoord2AndSpecialUV: TEXCOORD6;  // UV2和SpecialUV
+
+        float4 positionNDC: TEXCOORD7;
+        
+        
+        float4 VaryingsP_Custom1: TEXCOORD8;
+        float4 VaryingsP_Custom2: TEXCOORD9;
+        
+
+        float4 normalWSAndAnimBlend: TEXCOORD10;
+        
+        float3 fresnelViewDir :TEXCOORD11;
+        
+        float3 viewDirWS :TEXCOORD13;
+        float4 texcoordMaskMap2 : TEXCOORD14;
+
+        #ifdef _PARALLAX_MAPPING
+            half3  tangentViewDir : TEXCOORD16;
+        #endif
+
+        #ifndef _FX_LIGHT_MODE_UNLIT
+            half3 vertexSH :TEXCOORD17;
+            #ifdef _ADDITIONAL_LIGHTS_VERTEX
+                half3 vertexLight :TEXCOORD18;
+            #endif
+        #endif
+
+        #ifdef _NORMALMAP
+            half4 tangentWS : TEXCOOR19;
+            float4 bumpTexTexcoord : TEXCOOR20;
+        #endif
+        
+        
+        
+        
+        UNITY_VERTEX_INPUT_INSTANCE_ID
+        UNITY_VERTEX_OUTPUT_STEREO
+    };
+
+    bool isProcessUVInFrag()
+    {
+        if(CheckLocalFlags(FLAG_BIT_PARTICLE_POLARCOORDINATES_ON) || CheckLocalFlags(FLAG_BIT_PARTICLE_UTWIRL_ON)) 
+        {
+            return true;
+        }
+        #if defined(_DEPTH_DECAL) || defined(_PARALLAX_MAPPING) || defined(_SCREEN_DISTORT_MODE)
+            return true;
+        #endif
+        return false;
+    }
+
+#ifndef _FX_LIGHT_MODE_UNLIT
+	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+
+
+    void InitializeInputData(VaryingsParticle input, half3 normalTS, out InputData inputData)
+    {
+        inputData = (InputData)0;
+
+    #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
+        inputData.positionWS = input.positionWS;
+    #endif
+
+        half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
+    #if defined(_NORMALMAP) || defined(_DETAIL)
+        float sgn = input.tangentWS.w;      // should be either +1 or -1
+        float3 bitangent = sgn * cross(input.normalWSAndAnimBlend.xyz, input.tangentWS.xyz);
+        half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWSAndAnimBlend.xyz);
+
+        #if defined(_NORMALMAP)
+        inputData.tangentToWorld = tangentToWorld;
+        #endif
+        inputData.normalWS = TransformTangentToWorld(normalTS, tangentToWorld);
+    #else
+        inputData.normalWS = input.normalWSAndAnimBlend.xyz;
+    #endif
+
+        inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
+        inputData.viewDirectionWS = viewDirWS;
+
+    #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+        inputData.shadowCoord = input.shadowCoord;
+    #elif defined(MAIN_LIGHT_CALCULATE_SHADOWS)
+        inputData.shadowCoord = TransformWorldToShadowCoord(inputData.positionWS);
+    #else
+        inputData.shadowCoord = float4(0, 0, 0, 0);
+    #endif
+    #ifdef _ADDITIONAL_LIGHTS_VERTEX
+        inputData.fogCoord = InitializeInputDataFog(float4(input.positionWS, 1.0), input.fogFactorAndVertexLight.x);
+        inputData.vertexLighting = input.fogFactorAndVertexLight.yzw;
+    #else
+        inputData.fogCoord = InitializeInputDataFog(float4(input.positionWS.xyz, 1.0), input.positionWS.w);
+    #endif
+
+    // #if defined(DYNAMICLIGHTMAP_ON)
+    //     inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.dynamicLightmapUV, input.vertexSH, inputData.normalWS);
+    // #else
+    //     inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.vertexSH, inputData.normalWS);
+    // #endif
+
+        inputData.bakedGI = SampleSHPixel(input.vertexSH, inputData.normalWS);
+
+        inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.clipPos);
+        inputData.shadowMask = SAMPLE_SHADOWMASK(input.staticLightmapUV);
+
+        #if defined(DEBUG_DISPLAY)
+            #if defined(DYNAMICLIGHTMAP_ON)
+            inputData.dynamicLightmapUV = input.dynamicLightmapUV;
+            #endif
+            #if defined(LIGHTMAP_ON)
+            inputData.staticLightmapUV = input.staticLightmapUV;
+            #else
+            inputData.vertexSH = input.vertexSH;
+            #endif
+        #endif
+    }
+#endif
+
+
+
+
 #endif
