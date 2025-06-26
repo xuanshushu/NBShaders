@@ -432,15 +432,16 @@
     
             InputData inputData;
             InitializeInputData(input, normalTS, inputData);
-            half metallic = 0;
+            half metallic = _MaterialInfo.x;
             half3 specular = 0;
-            half smoothness = 0.5;
+            half smoothness = _MaterialInfo.y;
             half occlusion = 1;
             half3 pbrEmission = 0;
            // return half4(inputData.bakedGI,1);
             #ifdef _FX_LIGHT_MODE_BLINN_PHONG
-            half4 specularGloss = half4(1,1,1,0.5);
+            half4 specularGloss = _SpecularColor;
             half4 blinnPhong = UniversalFragmentBlinnPhong(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
+        return blinnPhong;
             result = blinnPhong.rgb;
             alpha = blinnPhong.a;
             #elif _FX_LIGHT_MODE_PBR
@@ -715,8 +716,6 @@
         half3 beforeFogResult = result;
         result = MixFog(result,input.positionWS.w);
         result = lerp(beforeFogResult, result, _fogintensity);
-        
-        
 
         // #ifndef _SCREEN_DISTORT_MODE
         //     result.rgb = result.rgb * alpha;

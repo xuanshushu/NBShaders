@@ -385,6 +385,28 @@ namespace UnityEditor
             helper.DrawPopUp("光照类型","_FxLightMode",_fxLightModeNames,drawBlock:mode=>
             {
                 _fxLightMode = (FxLightMode)mode;
+                if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.PBR)
+                {
+                    if (_fxLightMode == FxLightMode.BlinnPhong)
+                    {
+                        helper.DrawToggle("BlinnPhong高光开关","_BlinnPhongSpecularToggle",shaderKeyword:"_SPECULAR_COLOR",drawBlock:
+                            isToggle =>
+                            {
+                                if (isToggle)
+                                {
+                                    matEditor.ShaderProperty(helper.GetProperty("_SpecularColor"),"高光颜色");
+                                    helper.DrawVector4Componet("光滑度","_MaterialInfo","y",true,0,1);
+                                    
+                                }
+                            });
+                    }
+                    if (_fxLightMode == FxLightMode.PBR)
+                    {
+                        helper.DrawVector4Componet("金属度","_MaterialInfo","x",true,0,1);
+                        helper.DrawVector4Componet("光滑度","_MaterialInfo","y",true,0,1);
+                    }
+                }
+                
             });
             bool bumpMapFromMainTexUV = helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
             DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBumpTex,4,"法线贴图","_BumpTex",drawWrapMode:!bumpMapFromMainTexUV,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,drawScaleOffset: !bumpMapFromMainTexUV,drawBlock:

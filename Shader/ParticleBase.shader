@@ -81,6 +81,9 @@
     	_BumpScale("Scale", Float) = 1.0
         _BumpTex("Normal Map", 2D) = "bump" {}
     	_BumpTexFollowMainTexUVToggle("法线跟随主贴图UV",Float) = 0
+    	_MaterialInfo("x:金属度,y:光滑度",Vector) = (1,1,0,0)
+    	_BlinnPhongSpecularToggle("BlinnPhong高光开关",Float) = 0
+    	[HDR]_SpecularColor("BlinnPhong高光颜色",Color) = (1,1,1,1)
 
         //时间缩放影响开关----------
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
@@ -390,6 +393,7 @@
             #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
+            #pragma shader_feature_local _ _SPECULAR_COLOR
             
             
             // -------------------------------------
@@ -495,6 +499,7 @@
             #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
+            #pragma shader_feature_local _ _SPECULAR_COLOR
             
             // -------------------------------------
             // Unity defined keywords

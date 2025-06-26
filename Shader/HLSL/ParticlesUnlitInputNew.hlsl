@@ -43,6 +43,8 @@
 
     float4 _BumpTex_ST;
     half _BumpScale;
+    half4 _MaterialInfo;
+    half4 _SpecularColor;
 
     half _EdgeFade;
     half4 _NoiseOffset;
