@@ -240,7 +240,7 @@
         [HideInInspector] _BaseColorAddSubDiff ("_ColorMode", Vector) = (0, 0, 0, 0)
         [HideInInspector] _SoftParticlesEnabled ("__softparticlesenabled", Float) = 0.0
         [HideInInspector] _CameraFadingEnabled ("__camerafadingenabled", Float) = 0.0
-        [HideInInspector] _SoftParticleFadeParams ("xy:软粒子远近裁剪面", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _SoftParticleFadeParams ("xy:软粒子远近裁剪面", Vector) = (0, 0.5, 0, 0)
         [HideInInspector] _CameraFadeParams ("__camerafadeparams_ignore", Vector) = (0, 0, 0, 0)
         [HideInInspector] _IntersectEnabled("__IntersectEnabled_ignore",Float) = 0.0
         [HideInInspector] _IntersectRadius("__IntersectRadius_ignore",Float) = 0.3
