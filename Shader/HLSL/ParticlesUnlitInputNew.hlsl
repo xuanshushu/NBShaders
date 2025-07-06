@@ -1,7 +1,5 @@
 #ifndef PARTICLESUNLITINPUT
     #define PARTICLESUNLITINPUT
-
-
     
     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
    
@@ -41,10 +39,14 @@
     half4 _EmissionMapColor;
     half _EmissionMapColorIntensity;
 
+    //--------------光照部分-------------
     float4 _BumpTex_ST;
     half _BumpScale;
     half4 _MaterialInfo;
     half4 _SpecularColor;
+	//-----------SixWayLight----------
+    half4 _SixWayInfo;
+    half4 _SixWayEmissionColor;
 
     half _EdgeFade;
     half4 _NoiseOffset;
@@ -269,8 +271,15 @@
     Texture2D _MaskMap;
     Texture2D _MaskMap2;
     Texture2D _MaskMap3;
-    Texture2D _BumpTex;
+    #ifdef _NORMALMAP
+        Texture2D _BumpTex;
+    #endif
 
+    #ifdef _FX_LIGHT_MODE_SIX_WAY
+        Texture2D _RigRTBk;
+        Texture2D _RigLBtF;
+        Texture2D _SixWayEmissionRamp;
+    #endif
 
     #ifdef _SCREEN_DISTORT_MODE
         Texture2D _ScreenColorCopy1;
@@ -1015,7 +1024,7 @@
             float4 texcoords: TEXCOORD0;
         #endif
 
-        #if defined(_PARALLAX_MAPPING) || defined(_NORMALMAP)
+        #if defined(_PARALLAX_MAPPING) || defined(_NORMALMAP) || defined(_FX_LIGHT_MODE_SIX_WAY)
             float4 tangentOS     : TANGENT;
         #endif
         
@@ -1078,10 +1087,22 @@
             #endif
         #endif
 
-        #ifdef _NORMALMAP
+        #if defined(_NORMALMAP) || defined(_FX_LIGHT_MODE_SIX_WAY)
             half4 tangentWS : TEXCOOR19;
+        #endif
+        #ifdef _NORMALMAP
             float4 bumpTexTexcoord : TEXCOOR20;
         #endif
+
+        #ifdef _FX_LIGHT_MODE_SIX_WAY
+            half3 bakeDiffuseLighting0 :TEXCOOR21;
+            half3 bakeDiffuseLighting1 :TEXCOOR22;
+            half3 bakeDiffuseLighting2 :TEXCOOR23;
+            half3 backBakeDiffuseLighting0 :TEXCOOR24;
+            half3 backBakeDiffuseLighting1 :TEXCOOR25;
+            half3 backBakeDiffuseLighting2 :TEXCOOR26;
+        #endif
+        
         
         
         

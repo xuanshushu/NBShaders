@@ -1,8 +1,8 @@
 #ifndef PARTICLESUNLITFORWARDPASS
     #define PARTICLESUNLITFORWARDPASS
     #include "HLSL/ParticlesUnlitInputNew.hlsl"
+    #include "HLSL/SixWaySmokeLit.hlsl"
 
-    
     
     ///////////////////////////////////////////////////////////////////////////////
     //                  Vertex and Fragment functions                            //
@@ -71,18 +71,25 @@
         output.viewDirWS = GetWorldSpaceNormalizeViewDir(output.positionWS.xyz);
         output.normalWSAndAnimBlend.xyz = TransformObjectToWorldNormal(input.normalOS.xyz);
 
-        #ifdef _NORMALMAP
+        #if defined(_NORMALMAP)||defined(_FX_LIGHT_MODE_SIX_WAY) 
             real sign = input.tangentOS.w * GetOddNegativeScale();
             half3 tangentWS = TransformObjectToWorldDir(input.tangentOS.xyz);
             output.tangentWS = half4(tangentWS,sign);
         #endif
-        
 
 
         #ifndef _FX_LIGHT_MODE_UNLIT
-            OUTPUT_SH(output.normalWSAndAnimBlend.xyz, output.vertexSH);
-            #ifdef _ADDITIONAL_LIGHTS_VERTEX
-            output.vertexLight = VertexLighting(output.positionWS.xyz, output.normalWSAndAnimBlend.xyz);
+            #ifdef _FX_LIGHT_MODE_SIX_WAY
+                float3 bitangent = sign * cross(output.normalWSAndAnimBlend.xyz, output.tangentWS.xyz);
+                GetSixWayBakeDiffuseLight(output.normalWSAndAnimBlend.xyz,output.tangentWS,bitangent,
+                    output.bakeDiffuseLighting0,output.bakeDiffuseLighting1,output.bakeDiffuseLighting2,
+                    output.backBakeDiffuseLighting0,output.backBakeDiffuseLighting1,output.backBakeDiffuseLighting2);
+
+            #else
+                OUTPUT_SH(output.normalWSAndAnimBlend.xyz, output.vertexSH);
+                #ifdef _ADDITIONAL_LIGHTS_VERTEX
+                output.vertexLight = VertexLighting(output.positionWS.xyz, output.normalWSAndAnimBlend.xyz);
+                #endif
             #endif
         #endif
         
@@ -340,12 +347,16 @@
             uv.xy += mainTexNoise;//主贴图纹理扭曲
             blendUv.xy += mainTexNoise;
         #endif
-        
+
         // SampleAlbedo--------------------
         half4 albedo = 0;
         #if defined(_SCREEN_DISTORT_MODE)
             albedo = half4(cum_noise_xy, 1.0, noiseMask);
+        #elif _FX_LIGHT_MODE_SIX_WAY
+            float4 rigRTBkSample  = BlendTexture(_RigRTBk, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+            float4 rigLBtFSample  = BlendTexture(_RigLBtF, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
         #else
+        
             UNITY_FLATTEN
             if(CheckLocalFlags(FLAG_BIT_PARTICLE_BACKCOLOR))
             {
@@ -360,7 +371,6 @@
             #else
                 baseMap = _BaseMap;
             #endif
-         
         
             UNITY_BRANCH
             if (CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
@@ -376,9 +386,11 @@
             }
             else
             {
+                
                  albedo = BlendTexture(baseMap, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
                 
             }
+        
             albedo *= _BaseColor ;
             albedo.rgb *= _BaseColorIntensityForTimeline;
 
@@ -425,8 +437,6 @@
         normalTS = UnpackNormalRGB(half4(normalMapSample.xy,1,0),_BumpScale);
 
         #endif
-        
-
         //光照模式
         #ifndef _FX_LIGHT_MODE_UNLIT
     
@@ -449,6 +459,30 @@
             result = pbr.rgb;
             alpha = pbr.a;
             #elif _FX_LIGHT_MODE_SIX_WAY
+            BSDFData bsdfData;
+            bsdfData.absorptionRange = _SixWayInfo.x;
+            bsdfData.diffuseColor = _BaseColor;
+            bsdfData.normalWS = inputData.normalWS;
+            bsdfData.tangentWS = input.tangentWS;//Check this
+            bsdfData.rigRTBk = rigRTBkSample.xyz;
+            bsdfData.rigLBtF = rigLBtFSample.xyz;
+            bsdfData.bakeDiffuseLighting0 = input.bakeDiffuseLighting0;
+            bsdfData.bakeDiffuseLighting1 = input.bakeDiffuseLighting1;
+            bsdfData.bakeDiffuseLighting2 = input.bakeDiffuseLighting2;
+            bsdfData.backBakeDiffuseLighting0 = input.backBakeDiffuseLighting0;
+            bsdfData.backBakeDiffuseLighting1 = input.backBakeDiffuseLighting1;
+            bsdfData.backBakeDiffuseLighting2 = input.backBakeDiffuseLighting2;
+            bsdfData.emission = _SixWayEmissionColor.rgb * _SixWayEmissionColor.a;
+            bsdfData.emissionInput = rigLBtFSample.a;
+            bsdfData.alpha = rigRTBkSample.a * _BaseColor.a;
+
+            ModifyBakedDiffuseLighting(bsdfData,inputData.bakedGI);
+
+            half4 sixWay = UniversalFragmentSixWay(inputData,bsdfData);
+            
+            result = sixWay.rgb;
+            alpha = sixWay.a;
+        
             #endif
             
             #ifdef _ADDITIONAL_LIGHTS_VERTEX
@@ -465,7 +499,7 @@
             input.normalWSAndAnimBlend.xyz = TransformTangentToWorld(normalTS, tangentToWorld);
             #endif
         #endif
-        
+       
         
         
         

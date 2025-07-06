@@ -84,6 +84,12 @@
     	_MaterialInfo("x:金属度,y:光滑度",Vector) = (1,1,0,0)
     	_BlinnPhongSpecularToggle("BlinnPhong高光开关",Float) = 0
     	[HDR]_SpecularColor("BlinnPhong高光颜色",Color) = (1,1,1,1)
+	    //-----------SixWayLight----------
+    	_RigRTBk("六路正方向图(P)",2D) = "white"{}
+    	_RigLBtF("六路反方向图(N)",2D) = "white"{}
+    	_SixWayInfo("x:六路吸收强度",Vector) = (0.5,0,0,0)
+    	_SixWayEmissionRamp("六路自发光Ramp",2D) = "white"{}
+    	[HDR]_SixWayEmissionColor("六路自发光颜色",Color) = (1,1,1,1)
 
         //时间缩放影响开关----------
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
@@ -514,13 +520,9 @@
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             // The DeclareDepthTexture.hlsl file contains utilities for sampling the Camera
             // depth texture.
-
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
-
-
-            
             
             #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
             #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"

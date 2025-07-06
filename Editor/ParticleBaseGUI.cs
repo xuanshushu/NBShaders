@@ -406,20 +406,35 @@ namespace UnityEditor
                         helper.DrawVector4Componet("光滑度","_MaterialInfo","y",true,0,1);
                     }
                 }
+                else if(_fxLightMode == FxLightMode.SixWay)
+                {
+                    helper.DrawTexture("六路正方向图(P)","_RigRTBk",drawScaleOffset:false);
+                    helper.DrawTexture("六路反方向图(N)","_RigRTBk",drawScaleOffset:false);
+                    
+                    EditorGUILayout.HelpBox("六路UV跟随主贴图UV及颜色",MessageType.Warning);
+                        
+                    helper.DrawVector4Componet("六路吸收强度","_SixWayInfo","x",true,0,1);
+                    helper.DrawTexture("六路自发光Ramp","_SixWayEmissionRamp",drawScaleOffset:false);
+                    matEditor.ShaderProperty(helper.GetProperty("_SixWayEmissionColor"),"六路自发光颜色");
+                }
                 
             });
-            bool bumpMapFromMainTexUV = helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
-            DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBumpTex,4,"法线贴图","_BumpTex",drawWrapMode:!bumpMapFromMainTexUV,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,drawScaleOffset: !bumpMapFromMainTexUV,drawBlock:
-                theBumpmap =>
-                {
-                    if (!bumpMapFromMainTexUV)
+
+            if ( _fxLightMode != FxLightMode.SixWay)
+            {
+                bool bumpMapFromMainTexUV = helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
+                DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBumpTex,4,"法线贴图","_BumpTex",drawWrapMode:!bumpMapFromMainTexUV,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,drawScaleOffset: !bumpMapFromMainTexUV,drawBlock:
+                    theBumpmap =>
                     {
-                        DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeBumpTex,4,"法线贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,0,theBumpmap);
-                    }
-                    //在DoAfterDraw会执行SetKeyword的逻辑。
-                });
-            helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
-            helper.DrawSlider("法线强度","_BumpScale",-5f,5f);
+                        if (!bumpMapFromMainTexUV)
+                        {
+                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeBumpTex,4,"法线贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,0,theBumpmap);
+                        }
+                        //在DoAfterDraw会执行SetKeyword的逻辑。
+                    });
+                helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
+                helper.DrawSlider("法线强度","_BumpScale",-5f,5f);
+            }
         }
 
         public void DrawFeatureOptions()
@@ -678,6 +693,7 @@ namespace UnityEditor
                             {
                                 case FresnelMode.Color:
                                     matEditor.ColorProperty(helper.GetProperty("_FresnelColor"), "菲涅尔颜色");
+                                    shaderFlags[0].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
                                     shaderFlags[0].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
                                     shaderFlags[0].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
                                     break;
@@ -1357,7 +1373,7 @@ namespace UnityEditor
             "默认无光(Unlit)",
             "简单光照(BlinnPhong)",
             "高级光照(PBR)",
-            "六面光照(SixWay)"
+            "六路光照(SixWay)"
         };
 
         public string[] transparentModeNames =
