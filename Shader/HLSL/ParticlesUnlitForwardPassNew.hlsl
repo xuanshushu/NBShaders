@@ -463,8 +463,8 @@
             result = pbr.rgb;
             alpha = pbr.a;
             #elif _FX_LIGHT_MODE_SIX_WAY
-            BSDFData bsdfData;
-            bsdfData.absorptionRange = _SixWayInfo.x;
+            BSDFData bsdfData = (BSDFData)0;
+            bsdfData.absorptionRange = GetAbsorptionRange(_SixWayInfo.x);
             bsdfData.diffuseColor = _BaseColor;
             bsdfData.normalWS = inputData.normalWS;
             bsdfData.tangentWS = input.tangentWS;//Check this
@@ -476,13 +476,14 @@
             bsdfData.backBakeDiffuseLighting0 = input.backBakeDiffuseLighting0;
             bsdfData.backBakeDiffuseLighting1 = input.backBakeDiffuseLighting1;
             bsdfData.backBakeDiffuseLighting2 = input.backBakeDiffuseLighting2;
-            bsdfData.emission = _SixWayEmissionColor.rgb * _SixWayEmissionColor.a;
             bsdfData.emissionInput = rigLBtFSample.a;
+            GetSixWayEmission(bsdfData,_SixWayEmissionRamp,_SixWayEmissionColor,CheckLocalFlags1(FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP));//Init Emission
             bsdfData.alpha = rigRTBkSample.a * _BaseColor.a;
 
             ModifyBakedDiffuseLighting(bsdfData,inputData.bakedGI);
 
             half4 sixWay = UniversalFragmentSixWay(inputData,bsdfData);
+            
             
         // half3 dir = _MainLightPosition.xyz;
         // dir = TransformToLocalFrame(dir, bsdfData);

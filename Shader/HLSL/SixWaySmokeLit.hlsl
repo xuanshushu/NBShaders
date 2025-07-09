@@ -38,24 +38,24 @@ struct BSDFData
 float3 GetTransmissionWithAbsorption(float transmission, float4 absorptionColor, float absorptionRange)
 {
     // absorptionColor.rgb = max(VFX_EPSILON, absorptionColor.rgb);//这只是一个限定值
-    #if VFX_SIX_WAY_ABSORPTION
-    #if VFX_BLENDMODE_PREMULTIPLY
-    transmission /= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f  ;
-    #endif
+    #ifdef VFX_SIX_WAY_ABSORPTION
+        #ifdef VFX_BLENDMODE_PREMULTIPLY
+        transmission /= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f  ;
+        #endif
+    
+        // Empirical value used to parametrize absorption from color
+        const float absorptionStrength = 0.2f;
+        float3 densityScales = 1.0f + log2(absorptionColor.rgb) / log2(absorptionStrength);
+        // Recompute transmission based on density scaling
+        float3 outTransmission = pow(saturate(transmission / absorptionRange), densityScales) * absorptionRange;
 
-    // Empirical value used to parametrize absorption from color
-    const float absorptionStrength = 0.2f;
-    float3 densityScales = 1.0f + log2(absorptionColor.rgb) / log2(absorptionStrength);
-    // Recompute transmission based on density scaling
-    float3 outTransmission = pow(saturate(transmission / absorptionRange), densityScales) * absorptionRange;
+        #ifdef VFX_BLENDMODE_PREMULTIPLY
+        outTransmission *= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f  ;
+        #endif
 
-    #if VFX_BLENDMODE_PREMULTIPLY
-    outTransmission *= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f  ;
-    #endif
-
-    return min(absorptionRange, outTransmission); // clamp values out of range
+        return min(absorptionRange, outTransmission); // clamp values out of range
     #else
-    return transmission.xxx * absorptionColor.rgb; // simple multiply
+        return transmission.xxx * absorptionColor.rgb; // simple multiply
     #endif
 }
 
@@ -112,6 +112,11 @@ CBSDF EvaluateBSDF(float3 L, BSDFData bsdfData)
     return cbsdf;
 }
 
+half GetAbsorptionRange(float absorptionStrenth)
+{
+    return  INV_PI + saturate(absorptionStrenth) * (1 - INV_PI);
+}
+
 
 
 
@@ -143,11 +148,19 @@ LightingData CreateSixWayLightingData(InputData inputData, half3 emission)
     return lightingData;
 }
 
-void  GetSixWayEmission(inout  BSDFData bsdfData,Texture2D rampMap,half4 emissionColor)
+void  GetSixWayEmission(inout  BSDFData bsdfData,Texture2D rampMap,half4 emissionColor,bool isRampMap)
 {
-    half3 emission = rampMap.Sample(sampler_linear_clamp,half2(bsdfData.emissionInput,0.5));
-    emission *= emissionColor;
-    emission *= emissionColor.a;
+    float input = pow(bsdfData.emissionInput,_SixWayInfo.y);
+    half3 emission =  emissionColor * emissionColor.a;
+    if (isRampMap)
+    {
+        half4 rampSample = rampMap.Sample(sampler_linear_clamp,half2(input,0.5));
+        emission = emission * rampSample * rampSample.a;
+    }
+    else
+    {
+        emission *= input;
+    }
     bsdfData.emission = emission;
 }
 
@@ -169,7 +182,9 @@ half4 UniversalFragmentSixWay(InputData inputData,BSDFData bsdfData)
     // }
     // #endif
 
+#ifdef _LIGHT_LAYERS
     uint meshRenderingLayers = GetMeshRenderingLayer();
+#endif
     half4 shadowMask = CalculateShadowMask(inputData);
     // AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
     AmbientOcclusionFactor aoFactor;

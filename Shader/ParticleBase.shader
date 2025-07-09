@@ -89,7 +89,7 @@
     	_RigLBtF("六路反方向图(N)",2D) = "white"{}
     	_SixWayInfo("x:六路吸收强度",Vector) = (0.5,0,0,0)
     	_SixWayEmissionRamp("六路自发光Ramp",2D) = "white"{}
-    	[HDR]_SixWayEmissionColor("六路自发光颜色",Color) = (1,1,1,1)
+    	[HDR]_SixWayEmissionColor("六路自发光颜色",Color) = (1,0.5,0,1)
 
         //时间缩放影响开关----------
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
@@ -506,6 +506,7 @@
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
             #pragma shader_feature_local _ _SPECULAR_COLOR
+            #define VFX_SIX_WAY_ABSORPTION
             
             // -------------------------------------
             // Unity defined keywords

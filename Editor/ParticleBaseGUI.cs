@@ -413,8 +413,19 @@ namespace UnityEditor
                     
                     EditorGUILayout.HelpBox("六路UV跟随主贴图UV及颜色",MessageType.Warning);
                         
-                    helper.DrawVector4Componet("六路吸收强度","_SixWayInfo","x",true,0,1);
-                    helper.DrawTexture("六路自发光Ramp","_SixWayEmissionRamp",drawScaleOffset:false);
+                    helper.DrawVector4Componet("六路吸收强度","_SixWayInfo","x",false,0,1);
+                    helper.DrawTexture("六路自发光Ramp","_SixWayEmissionRamp",drawScaleOffset:false,drawBlock: rampMap =>
+                    {
+                        if (rampMap)
+                        {
+                            shaderFlags[0].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP,index:1);
+                        }
+                        else
+                        {
+                            shaderFlags[0].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP,index:1);
+                        }
+                    });
+                    helper.DrawVector4Componet("六路自发光Pow","_SixWayInfo","y",false);
                     matEditor.ShaderProperty(helper.GetProperty("_SixWayEmissionColor"),"六路自发光颜色");
                 }
                 
@@ -475,7 +486,7 @@ namespace UnityEditor
                 DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMask2,3,"遮罩2","_Mask2_Toggle",flagBitsName:W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MASK_MAP2,flagIndex:1,isIndentBlock:true,drawBlock:
                     (isToggle) =>
                     {
-                            helper.DrawTexture("遮罩2贴图","_MaskMap2",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2,flagIndex:2,
+                            helper.DrawTexture("遮罩2贴图","_MaskMap2",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2,flagIndex:2,
                                 drawBlock:theMaskMap2Texture =>
                                 {
                                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeMaskMap2,4,"遮罩2UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP_2,0,hasMap:theMaskMap2Texture);
@@ -487,7 +498,7 @@ namespace UnityEditor
                 DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMask3,3,"遮罩3",flagBitsName:W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MASK_MAP3,flagIndex:1,isIndentBlock:true,drawBlock:
                     (isToggle) =>
                     {
-                            helper.DrawTexture("遮罩3贴图","_MaskMap3",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3,flagIndex:2,drawBlock:theMaskMap3Texture=>
+                            helper.DrawTexture("遮罩3贴图","_MaskMap3",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3,flagIndex:2,drawBlock:theMaskMap3Texture=>
                             {
                                 DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeMaskMap3,4,"遮罩3UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP_3,0,hasMap:theMaskMap3Texture);
                                 helper.DrawVector4In2Line("_MaskMap3OffsetAnition",firstLineLabel:"遮罩3偏移速度");
@@ -537,7 +548,7 @@ namespace UnityEditor
                          {
                              // if (isNoiseMaskToggle)
                              // {
-                                helper.DrawTexture("扭曲遮罩贴图","_NoiseMaskMap",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_NOISE_MASKMAP,drawBlock:
+                                helper.DrawTexture("扭曲遮罩贴图","_NoiseMaskMap",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_NOISE_MASKMAP,drawBlock:
                                     theNoiseMaskMap =>
                                     {
                                         DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeNoiseMaskMap,4,"扭曲遮罩贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_NOISE_MASK_MAP,0,theNoiseMaskMap);
@@ -561,7 +572,7 @@ namespace UnityEditor
             DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitEmission,3,"流光","_EmissionEnabled",shaderKeyword:"_EMISSION",isIndentBlock:true,fontStyle:FontStyle.Bold,drawBlock: (isToggle) =>{
                 // if (isToggle)
                 // {
-                    helper.DrawTexture("流光贴图","_EmissionMap","_EmissionMapColor",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_EMISSIONMAP,flagIndex:2,drawBlock:theEmissionMap=>
+                    helper.DrawTexture("流光贴图","_EmissionMap","_EmissionMapColor",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_EMISSIONMAP,flagIndex:2,drawBlock:theEmissionMap=>
                     {
                         DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeEmissionMap,4,"流光贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_EMISSION_MAP,0,theEmissionMap);
                     });
@@ -644,7 +655,7 @@ namespace UnityEditor
                         {
                             // if (isDissolveUseRampToggle)
                             // {
-                                helper.DrawTexture("溶解Ramp图","_DissolveRampMap","_DissolveRampColor",drawScaleOffset:true,drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP,flagIndex:2);                       
+                                helper.DrawTexture("溶解Ramp图","_DissolveRampMap","_DissolveRampColor",drawScaleOffset:true,drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP,flagIndex:2);                       
                             // }
                         });
                     
@@ -654,7 +665,7 @@ namespace UnityEditor
                         {
                             // if (isToggle)
                             // {
-                                helper.DrawTexture("局部溶解蒙版","_DissolveMaskMap",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_MASKMAP,flagIndex:2);
+                                helper.DrawTexture("局部溶解蒙版","_DissolveMaskMap",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_MASKMAP,flagIndex:2);
                                 DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeDissolveMaskMap,4,"局部溶解蒙板UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_DISSOLVE_MASK_MAP,0);
                                 helper.DrawVector4Componet("局部控制强度","_Dissolve","z",false);
                                 DrawCustomDataSelect("局部溶解强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_MASK_INTENSITY,1);
@@ -671,7 +682,7 @@ namespace UnityEditor
             {
                 // if (isToggle)
                 // {
-                    helper.DrawTexture("颜色渐变贴图","_ColorBlendMap",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_COLORBLENDMAP,flagIndex:2);
+                    helper.DrawTexture("颜色渐变贴图","_ColorBlendMap",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_COLORBLENDMAP,flagIndex:2);
                     matEditor.ColorProperty(helper.GetProperty("_ColorBlendColor"), "颜色渐变叠加");
                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeColorBlendMap,4,"颜色渐变贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP,0);
                     helper.DrawVector4In2Line("_ColorBlendMapOffset","颜色渐变贴图偏移速度");
@@ -762,7 +773,7 @@ namespace UnityEditor
                 {
                     // if (isToggle)
                     // {
-                        helper.DrawTexture("顶点偏移贴图","_VertexOffset_Map",drawScaleOffset:true,drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_VERTEXOFFSETMAP,flagIndex:2);
+                        helper.DrawTexture("顶点偏移贴图","_VertexOffset_Map",drawScaleOffset:true,drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_VERTEXOFFSETMAP,flagIndex:2);
                         DrawCustomDataSelect("顶点扰动X轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_X,1);
                         DrawCustomDataSelect("顶点扰动Y轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_Y,1);
                         DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeVertexOffsetMap,4,"顶点偏移贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MAP,0);
@@ -782,7 +793,7 @@ namespace UnityEditor
                         DrawToggleFoldOut(W9ParticleShaderFlags.foldOutVertexOffsetMask,4,"顶点偏移遮罩","_VertexOffset_Mask_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_VERTEXOFFSET_MASKMAP,1,
                             drawBlock:isMaskToggle =>
                             {
-                                helper.DrawTexture("顶点偏移遮罩图","_VertexOffset_MaskMap",drawScaleOffset:true,drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_VERTEXOFFSET_MASKMAP,flagIndex:2);
+                                helper.DrawTexture("顶点偏移遮罩图","_VertexOffset_MaskMap",drawScaleOffset:true,drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_VERTEXOFFSET_MASKMAP,flagIndex:2);
                                 DrawCustomDataSelect("顶点扰动遮罩X轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_3_CUSTOMDATA_VERTEX_OFFSET_MASK_X,3);
                                 DrawCustomDataSelect("顶点扰动遮罩Y轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_3_CUSTOMDATA_VERTEX_OFFSET_MASK_Y,3);
                                 DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeVertexOffsetMaskMap,4,"顶点偏移遮罩图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MASKMAP,0);
@@ -802,7 +813,7 @@ namespace UnityEditor
                         // if (isTogggle)
                         // {
                             helper.DrawTexture("视差贴图", "_ParallaxMapping_Map", drawWrapMode: true,
-                                flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_PARALLAXMAPPINGMAP, flagIndex: 2);
+                                wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_PARALLAXMAPPINGMAP, flagIndex: 2);
                             helper.DrawSlider("视差", "_ParallaxMapping_Intensity", 0, 0.1f);
                             
                             helper.DrawVector4Componet("遮蔽视差最小层数","_ParallaxMapping_Vec","x",true,0f,100f);
