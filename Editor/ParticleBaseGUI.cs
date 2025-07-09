@@ -409,7 +409,7 @@ namespace UnityEditor
                 else if(_fxLightMode == FxLightMode.SixWay)
                 {
                     helper.DrawTexture("六路正方向图(P)","_RigRTBk",drawScaleOffset:false);
-                    helper.DrawTexture("六路反方向图(N)","_RigRTBk",drawScaleOffset:false);
+                    helper.DrawTexture("六路反方向图(N)","_RigLBtF",drawScaleOffset:false);
                     
                     EditorGUILayout.HelpBox("六路UV跟随主贴图UV及颜色",MessageType.Warning);
                         
@@ -1562,24 +1562,28 @@ namespace UnityEditor
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
                         break;
                     case FxLightMode.BlinnPhong:
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
                         break;
                     case FxLightMode.PBR:
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
                         break;
                     case FxLightMode.SixWay:
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        mats[i].EnableKeyword("EVALUATE_SH_VERTEX");//强制六面体使用顶点SH。
                         break;
                 }
 
@@ -1801,6 +1805,12 @@ namespace UnityEditor
 
             if (material.GetFloat("_ParallaxMapping_Toggle") > 0.5f)
             {
+                needTangent = true;
+            }
+
+            if (_fxLightMode != FxLightMode.UnLit)
+            {
+                needNormal = true;
                 needTangent = true;
             }
 

@@ -85,6 +85,7 @@ void ModifyBakedDiffuseLighting(BSDFData bsdfData, inout float3 bakeDiffuseLight
     bakeDiffuseLighting += GetTransmissionWithAbsorption(bsdfData.rigLBtF.z, bsdfData.diffuseColor, bsdfData.absorptionRange) * bakeDiffuseLightingMat[2];
 
     bakeDiffuseLighting *= scale;
+    
 }
 
 //世界空间到切线空间方向转换
@@ -92,7 +93,7 @@ float3 TransformToLocalFrame(float3 L, BSDFData bsdfData)
 {
     float3 zVec = -bsdfData.normalWS;
     float3 xVec = bsdfData.tangentWS.xyz;
-    float3 yVec = cross(zVec, xVec) * bsdfData.tangentWS.w;
+    float3 yVec = -cross(zVec, xVec) * bsdfData.tangentWS.w;//原代码没有负值，实际测试需要负值
     float3x3 tbn = float3x3(xVec, yVec, zVec);
     return mul(tbn, L);
 }
@@ -121,12 +122,12 @@ void GetSixWayBakeDiffuseLight(real3 normalWS,real3 tangentWS,real3 biTangentWS,
     inout  half3 bakeDiffuseLighting0,inout half3 bakeDiffuseLighting1,inout half3 bakeDiffuseLighting2,
     inout half3 backBakeDiffuseLighting0,inout half3 backBakeDiffuseLighting1,inout half3 backBakeDiffuseLighting2)
 {
-    OUTPUT_SH(tangentWS,bakeDiffuseLighting0);
-    OUTPUT_SH(biTangentWS,bakeDiffuseLighting1);
-    OUTPUT_SH(-normalWS,bakeDiffuseLighting2);
-    OUTPUT_SH(-tangentWS,backBakeDiffuseLighting0);
-    OUTPUT_SH(-biTangentWS,backBakeDiffuseLighting1);
-    OUTPUT_SH(normalWS,backBakeDiffuseLighting2);
+    bakeDiffuseLighting0 = SampleSHVertex(tangentWS);
+    bakeDiffuseLighting1 = SampleSHVertex(biTangentWS);
+    bakeDiffuseLighting2 = SampleSHVertex(-normalWS);
+    backBakeDiffuseLighting0 = SampleSHVertex(-tangentWS);
+    backBakeDiffuseLighting1 = SampleSHVertex(-biTangentWS);
+    backBakeDiffuseLighting2 = SampleSHVertex(normalWS);
 }
 
 LightingData CreateSixWayLightingData(InputData inputData, half3 emission)

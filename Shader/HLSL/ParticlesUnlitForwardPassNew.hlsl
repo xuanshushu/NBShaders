@@ -81,6 +81,10 @@
         #ifndef _FX_LIGHT_MODE_UNLIT
             #ifdef _FX_LIGHT_MODE_SIX_WAY
                 float3 bitangent = sign * cross(output.normalWSAndAnimBlend.xyz, output.tangentWS.xyz);
+                // GetSixWayBakeDiffuseLight(output.normalWSAndAnimBlend.xyz,output.tangentWS,bitangent,
+                //     output.bakeDiffuseLighting0,output.bakeDiffuseLighting1,output.bakeDiffuseLighting2,
+                //     output.backBakeDiffuseLighting0,output.backBakeDiffuseLighting1,output.backBakeDiffuseLighting2);
+
                 GetSixWayBakeDiffuseLight(output.normalWSAndAnimBlend.xyz,output.tangentWS,bitangent,
                     output.bakeDiffuseLighting0,output.bakeDiffuseLighting1,output.bakeDiffuseLighting2,
                     output.backBakeDiffuseLighting0,output.backBakeDiffuseLighting1,output.backBakeDiffuseLighting2);
@@ -480,6 +484,10 @@
 
             half4 sixWay = UniversalFragmentSixWay(inputData,bsdfData);
             
+        // half3 dir = _MainLightPosition.xyz;
+        // dir = TransformToLocalFrame(dir, bsdfData);
+        // return half4(dir,1);
+        
             result = sixWay.rgb;
             alpha = sixWay.a;
         
@@ -500,7 +508,6 @@
             #endif
         #endif
        
-        
         
         
         
