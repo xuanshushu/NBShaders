@@ -139,6 +139,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_1_MAINTEX_COLOR_REFINE= 1 << 27;
     public const int FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX= 1 << 28;
     public const int FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP= 1 << 29;
+    public const int FLAG_BIT_PARTICLE_1_MATCAP_MULTY_MODE= 1 << 30;
     
     
     public const int FLAG_BIT_WRAPMODE_BASEMAP= 1 << 0;

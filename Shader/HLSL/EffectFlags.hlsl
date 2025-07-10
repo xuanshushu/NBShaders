@@ -65,6 +65,7 @@
     #define FLAG_BIT_PARTICLE_1_MAINTEX_COLOR_REFINE (1 << 27)
     #define FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX (1 << 28)
     #define FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP (1 << 29)
+    #define FLAG_BIT_PARTICLE_1_MATCAP_MULTY_MODE (1 << 30)
     
  
     //WrapMode不能够超过16位（因为会占用x和x+16两个bit位）

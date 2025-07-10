@@ -78,6 +78,7 @@
     	
     	//--------------光照部分-------------
     	_FxLightMode("灯光模式",Float) = 0
+    	_BumpMapToggle("法线贴图开关",Float) = 0
     	_BumpScale("Scale", Float) = 1.0
         _BumpTex("Normal Map", 2D) = "bump" {}
     	_BumpTexFollowMainTexUVToggle("法线跟随主贴图UV",Float) = 0
@@ -91,6 +92,13 @@
     	_SixWayInfo("x:六路吸收强度",Vector) = (0.5,0,0,0)
     	_SixWayEmissionRamp("六路自发光Ramp",2D) = "white"{}
     	[HDR]_SixWayEmissionColor("六路自发光颜色",Color) = (1,0.5,0,1)
+    	
+    	//-----MatCap------
+    	_MatCapToggle("MatCap开关",Float) = 0
+    	_MatCapTex("MatCap图",2D) = "white"{}
+    	[HDR]_MatCapColor("MatCap颜色",Color) = (1,1,1,1)
+    	_MatCapInfo("x:MatCap叠加和相乘过渡",Vector) = (1,0,0,0)
+//    	_MatCapBlendMode("MatCap叠加模式",Float) = 0
 
         //时间缩放影响开关----------
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
@@ -341,7 +349,7 @@
             #pragma exclude_renderers d3d11_9x
             #pragma exclude_renderers d3d9
             
-            #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
             
             // -------------------------------------
             // Material Keywords
@@ -451,7 +459,7 @@
             // -------------------------------------
             // Material Keywords
  
-            #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
             
             #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
             #pragma shader_feature_local _ _MASKMAP_ON

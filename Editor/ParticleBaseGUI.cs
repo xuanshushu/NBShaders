@@ -438,18 +438,36 @@ namespace UnityEditor
 
             if ( _fxLightMode != FxLightMode.SixWay)
             {
-                bool bumpMapFromMainTexUV = helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
-                DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBumpTex,4,"法线贴图","_BumpTex",drawWrapMode:!bumpMapFromMainTexUV,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,drawScaleOffset: !bumpMapFromMainTexUV,drawBlock:
-                    theBumpmap =>
-                    {
-                        if (!bumpMapFromMainTexUV)
+                helper.DrawToggle("法线贴图开关","_BumpMapToggle",shaderKeyword:"_NORMALMAP",drawBlock: isBumpMapToggle =>
+                {
+                    bool bumpMapFromMainTexUV = helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
+                    DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBumpTex,4,"法线贴图","_BumpTex",drawWrapMode:!bumpMapFromMainTexUV,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,drawScaleOffset: !bumpMapFromMainTexUV,drawBlock:
+                        theBumpmap =>
                         {
-                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeBumpTex,4,"法线贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,0,theBumpmap);
-                        }
-                        //在DoAfterDraw会执行SetKeyword的逻辑。
-                    });
-                helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
-                helper.DrawSlider("法线强度","_BumpScale",-5f,5f);
+                            if (!bumpMapFromMainTexUV)
+                            {
+                                DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit2UVModeBumpTex,4,"法线贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BUMPTEX,0,theBumpmap);
+                            }
+                            //在DoAfterDraw会执行SetKeyword的逻辑。
+                        });
+                    helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
+                    helper.DrawSlider("法线强度","_BumpScale",-5f,5f); 
+                });
+                //--------------法线-----------------
+                
+                helper.DrawToggle("MatCap模拟材质","_MatCapToggle",shaderKeyword:"_MATCAP",drawBlock: isMatCapToggle =>
+                {
+                    if (isMatCapToggle)
+                    {
+                        helper.DrawTexture("MatCap图","_MatCapTex",drawScaleOffset:false);
+                        matEditor.ColorProperty(helper.GetProperty("_MatCapColor"), "MatCap颜色");
+                        helper.DrawVector4Componet("MatCap相加到相乘过渡","_MatCapInfo","x",true);
+                    }
+                });
+            }
+            else
+            {
+                //这里应该关掉法线和Matcap的Keyword
             }
         }
 
@@ -944,337 +962,6 @@ namespace UnityEditor
 
             if (!_uieffectEnabled||_uiParticleEnabled)
             {
-                #region CustomData旧版本
-/*
-                
-
-
-                {
-                    
-                    EditorGUILayout.Space();
-
-                    bool isCustomedData1X = false,
-                        isCustomedData1Y = false,
-                        isCustomedData1Z = false,
-                        isCustomedData1W = false,
-                        isCustomedData2X = false,
-                        isCustomedData2Y = false,
-                        isCustomedData2Z = false,
-                        isCustomedData2W = false;
-                
-               
-                // helper.DrawToggle("CustomData1X主贴图X轴偏移","_CustomData1X_MainTexOffsetX_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_MAINTEXOFFSETX,drawBlock:
-                //     (isToggle) => { isCustomedData1X = isToggle;});
-                // helper.DrawToggle("CustomData1Y主贴图Y轴偏移","_CustomData1Y_MainTexOffsetY_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_MAINTEXOFFSETY,drawBlock:
-                //     (isToggle) => { isCustomedData1Y = isToggle;});
-                // helper.DrawToggle("CustomData1Z溶解强度","_CustomData1Z_Dissolve_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_DISSOLVE_ON,drawBlock:
-                //     (isToggle) => { isCustomedData1Z = isToggle;});
-                // helper.DrawToggle("CustomData1W色相偏移","_CustomData1W_HueShift_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_HUESHIFT,drawBlock:
-                //     (isToggle) => { isCustomedData1W = isToggle;});
-                // helper.DrawToggle("CustomData2XMask图X轴偏移","_CustomData2X_MaskMapOffsetX_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_MASKMAPOFFSETX,drawBlock:
-                //     (isToggle) => { isCustomedData2X = isToggle;});
-                // helper.DrawToggle("CustomData2YMask图Y轴偏移","_CustomData2Y_MaskMapOffsetY_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY,drawBlock:
-                //     (isToggle) => { isCustomedData2Y = isToggle;});
-                // helper.DrawToggle("CustomData2Z菲涅尔范围","_CustomData2Z_FresnelOffset_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Z_FRESNELOFFSET,drawBlock:
-                //     (isToggle) => { isCustomedData2Z = isToggle;});
-
-                    helper.DrawPopUp("CustomData1X", "_CustomData1X_MainTexOffsetX_Toggle", CustomData1XModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData1XMode)f)
-                            {
-                                case CustomData1XMode.none:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_MAINTEXOFFSETX, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_DISSOLVETEXOFFSETX, index: 1);
-                                    isCustomedData1X = false;
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_X,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,1);
-                                    break;
-                                case CustomData1XMode.MainTexOffsetX:
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_MAINTEXOFFSETX, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_DISSOLVETEXOFFSETX, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1X,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_X,1);
-                                    isCustomedData1X = true;
-                                    break;
-                                case CustomData1XMode.DissolveTexOffseX:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_MAINTEXOFFSETX, index: 0);
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1X_DISSOLVETEXOFFSETX, index: 1);
-                                    isCustomedData1X = true;
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1X,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_X,1);
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData1Y", "_CustomData1Y_MainTexOffsetY_Toggle", CustomData1YModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData1YMode)f)
-                            {
-                                case CustomData1YMode.none:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_MAINTEXOFFSETY, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_DISSOLVETEXOFFSETY, index: 1);
-                                    isCustomedData1Y = false;
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_Y,1);
-                                    break;
-                                case CustomData1YMode.MainTexOffsetY:
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_MAINTEXOFFSETY, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_DISSOLVETEXOFFSETY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1Y,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_Y,1);
-                                    isCustomedData1Y = true;
-                                    break;
-                                case CustomData1YMode.DissolveOffsexY:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_MAINTEXOFFSETY, index: 0);
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Y_DISSOLVETEXOFFSETY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1Y,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_Y,1);
-                                    isCustomedData1Y = true;
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData1Z", "_CustomData1Z_Dissolve_Toggle", CustomData1ZModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData1ZMode)f)
-                            {
-                                case CustomData1ZMode.none:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_DISSOLVE_ON, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_NOISE_INTENSITY, index: 1);
-                                    isCustomedData1Z = false;
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_NOISE_INTENSITY,1);
-                                    break;
-                                case CustomData1ZMode.DissolveIntensity:
-                                    shaderFlag.SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_DISSOLVE_ON,
-                                        index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_NOISE_INTENSITY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1Z,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_NOISE_INTENSITY,1);
-                                    isCustomedData1Z = true;
-                                    break;
-                                case CustomData1ZMode.NoiseIntensity:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_DISSOLVE_ON, index: 0);
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1Z_NOISE_INTENSITY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1Z,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_NOISE_INTENSITY,1);
-                                    isCustomedData1Z = true;
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData1W", "_CustomData1W_HueShift_Toggle", CustomData1WModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData1WMode)f)
-                            {
-                                case CustomData1WMode.none:
-                                    shaderFlag.ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_HUESHIFT,
-                                        index: 0);
-                                    shaderFlag.ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_SATURATE,
-                                        index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_HUESHIFT,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE,1);
-                                    isCustomedData1W = false;
-                                    break;
-                                case CustomData1WMode.HueShift:
-                                    shaderFlag.SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_HUESHIFT,
-                                        index: 0);
-                                    shaderFlag.ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_SATURATE,
-                                        index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1W,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_HUESHIFT,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE,1);
-                                    isCustomedData1W = true;
-                                    break;
-                                case CustomData1WMode.Saturate:
-                                    shaderFlag.ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_HUESHIFT,
-                                        index: 0);
-                                    shaderFlag.SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1W_SATURATE,
-                                        index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_HUESHIFT,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData1W,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE,1);
-                                    isCustomedData1W = true;
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData2X", "_CustomData2X_MaskMapOffsetX_Toggle", CustomData2XModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData2XMode)f)
-                            {
-                                case CustomData2XMode.none:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_MASKMAPOFFSETX, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_VERTEXOFFSETX, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_X,1);
-                                    isCustomedData2X = false;
-                                    break;
-                                case CustomData2XMode.MaskOffsetX:
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_MASKMAPOFFSETX, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_VERTEXOFFSETX, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2X,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_X,1);
-                                    isCustomedData2X = true;
-                                    break;
-                                case CustomData2XMode.VertexOffsetX:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_MASKMAPOFFSETX, index: 0);
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2X_VERTEXOFFSETX, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2X,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_X,1);
-                                    isCustomedData2X = true;
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData2Y", "_CustomData2Y_MaskMapOffsetY_Toggle", CustomData2YModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData2YMode)f)
-                            {
-                                case CustomData2YMode.none:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_VERTEXOFFSETY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_Y,1);
-                                    isCustomedData2Y = false;
-                                    break;
-                                case CustomData2YMode.MaskOffsetY:
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_VERTEXOFFSETY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2Y,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_Y,1);
-                                    isCustomedData2Y = true;
-                                    break;
-                                case CustomData2YMode.VertexOffsetY:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY, index: 0);
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Y_VERTEXOFFSETY, index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2Y,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_Y,1);
-                                    isCustomedData2Y = true;
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData2Z", "_CustomData2Z_FresnelOffset_Toggle", CustomData2ZModeName,
-                        drawBlock: (f) =>
-                        {
-                            switch ((CustomData2ZMode)f)
-                            {
-                                case CustomData2ZMode.none:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Z_FRESNELOFFSET, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CUSTOMDATA2Z_VERTEXOFFSET_INTENSITY,
-                                        index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEXOFFSET_INTENSITY,1);
-                                    isCustomedData2Z = false;
-                                    break;
-                                case CustomData2ZMode.FresnelOffset:
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Z_FRESNELOFFSET, index: 0);
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CUSTOMDATA2Z_VERTEXOFFSET_INTENSITY,
-                                        index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2Z,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEXOFFSET_INTENSITY,1);
-                                    isCustomedData2Z = true;
-                                    break;
-                                case CustomData2ZMode.VertexOffsetIntensity:
-                                    shaderFlag.ClearFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2Z_FRESNELOFFSET, index: 0);
-                                    shaderFlag.SetFlagBits(
-                                        W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CUSTOMDATA2Z_VERTEXOFFSET_INTENSITY,
-                                        index: 1);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0);
-                                    shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2Z,W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_VERTEXOFFSET_INTENSITY,1);
-                                    isCustomedData2Z = true;
-                                    break;
-                            }
-                        });
-
-                    helper.DrawPopUp("CustomData2W", "_CustomData2W_Toggle", CustomData2WModeName, drawBlock: (f) =>
-                    {
-                        switch ((CustomData2WMode)f)
-                        {
-                            case CustomData2WMode.none:
-                                shaderFlag.ClearFlagBits(
-                                    W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2W_CHORATICABERRAT_INTENSITY,
-                                    index: 1);
-                                shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.Off,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,0);
-
-                                isCustomedData2W = false;
-                                break;
-                            case CustomData2WMode.ChoraticaberratIntensity:
-                                shaderFlag.SetFlagBits(
-                                    W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2W_CHORATICABERRAT_INTENSITY,
-                                    index: 1);
-                                shaderFlag.SetCustomDataFlag(W9ParticleShaderFlags.CutomDataComponent.CustomData2W,W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,0);
-                                isCustomedData2W = true;
-                                break;
-                        }
-                    });
-
-
-                    bool isCustomedData1 = isCustomedData1X || isCustomedData1Y || isCustomedData1Z || isCustomedData1W;
-                    isCustomedData1 = isCustomedData1 || shaderFlag.IsCustomData1On();
-                  
-                    if (isCustomedData1)
-                    {
-                        shaderFlag.SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1_ON);
-                    }
-                    else
-                    {
-                        shaderFlag.ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1_ON);
-                    } 
-                    
-                    bool isCustomedData2 = isCustomedData2X || isCustomedData2Y || isCustomedData2Z ||isCustomedData2W;
-                    isCustomedData2 = isCustomedData2 || shaderFlag.IsCustomData2On();
-                    if (isCustomedData2)
-                    {
-                        shaderFlag.SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2_ON);
-                    }
-                    else
-                    {
-                        shaderFlag.ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2_ON);
-                    }
-                    //旧版本结束。
-                }
-                */
-                #endregion
 
                 for (int i = 0; i < mats.Count; i++)
                 {
@@ -1405,110 +1092,11 @@ namespace UnityEditor
             Transparent = 1,
             CutOff = 2
         }
-        
-        public enum CustomData1XMode
-        {
-            none = 0,
-            MainTexOffsetX = 1,
-            DissolveTexOffseX = 2
-        }
 
-        private string[] CustomData1XModeName = new string[]
+        private string[] matCapBlendModeNames =
         {
-            "无",
-            "主贴图X轴偏移",
-            "溶解贴图X轴偏移"
-        };
-        
-        
-        public enum CustomData1YMode
-        {
-            none = 0,
-            MainTexOffsetY = 1,
-            DissolveOffsexY = 2
-        }
-        
-        private string[] CustomData1YModeName = new string[]
-        {
-            "无",
-            "主贴图Y轴偏移",
-            "溶解贴图Y轴偏移"
-        };
-        public enum CustomData1ZMode
-        {
-            none = 0,
-            DissolveIntensity = 1,
-            NoiseIntensity = 2
-        }
-        
-        private string[] CustomData1ZModeName = new string[]
-        {
-            "无",
-            "溶解强度",
-            "扭曲强度"
-        };
-        
-        public enum CustomData1WMode
-        {
-            none = 0,
-            HueShift = 1,
-            Saturate = 2
-        }
-        private string[] CustomData1WModeName = new string[]
-        {
-            "无",
-            "色相偏移",
-            "饱和度强度"
-        };
-        
-        public enum CustomData2XMode
-        {
-            none = 0,
-            MaskOffsetX = 1,
-            VertexOffsetX = 2
-        }
-        
-        private string[] CustomData2XModeName = new string[]
-        {
-            "无",
-            "Mask图X轴偏移",
-            "顶点扰动X轴偏移"
-        };
-        
-        public enum CustomData2YMode
-        {
-            none = 0,
-            MaskOffsetY = 1,
-            VertexOffsetY = 2
-        }
-        
-        private string[] CustomData2YModeName = new string[]
-        {
-            "无",
-            "Mask图Y轴偏移",
-            "顶点扰动Y轴偏移"
-        };
-        public enum CustomData2ZMode
-        {
-            none = 0,
-            FresnelOffset = 1,
-            VertexOffsetIntensity = 2
-        }
-        private string[] CustomData2ZModeName = new string[]
-        {
-            "无",
-            "菲涅尔范围",
-            "顶点扰动强度"
-        };
-        public enum CustomData2WMode
-        {
-            none = 0,
-            ChoraticaberratIntensity = 1
-        }
-        private string[] CustomData2WModeName = new string[]
-        {
-            "无",
-            "通道偏移强度"
+            "相加Add",
+            "相乘Multiply",
         };
         
         void DoAfterDraw()
@@ -1720,16 +1308,6 @@ namespace UnityEditor
                         shaderFlags[i].CheckFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UNSCALETIME_ON);
                         shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_SCRIPTABLETIME_ON);
                         break;
-                }
-
-                bool hasBumpMap = mats[i].HasTexture("_BumpTex");
-                if (hasBumpMap)
-                {
-                    mats[i].EnableKeyword("_NORMALMAP");
-                }
-                else
-                {
-                    mats[i].DisableKeyword("_NORMALMAP");
                 }
             }
         }

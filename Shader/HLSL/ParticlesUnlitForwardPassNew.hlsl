@@ -455,7 +455,6 @@
             #ifdef _FX_LIGHT_MODE_BLINN_PHONG
             half4 specularGloss = _SpecularColor;
             half4 blinnPhong = UniversalFragmentBlinnPhong(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
-        return blinnPhong;
             result = blinnPhong.rgb;
             alpha = blinnPhong.a;
             #elif _FX_LIGHT_MODE_PBR
@@ -509,6 +508,26 @@
             #endif
         #endif
        
+        #ifdef _MATCAP
+        // URP 
+        half3 normalVS = mul(input.normalWSAndAnimBlend.xyz, (float3x3)UNITY_MATRIX_I_V); // 逆转置矩阵 
+        half3 positionVS = TransformWorldToView(input.positionWS);
+
+        
+        float3 r = reflect(positionVS, normalVS); 
+        r = normalize(r); 
+        float m = 2.828427f * sqrt(r.z + 1.0);  
+        float2 matCapUV = r.xy / m + 0.5;
+        half3 matCapSample = SAMPLE_TEXTURE2D(_MatCapTex,sampler_linear_clamp,matCapUV);
+
+        matCapSample *= _MatCapColor.rgb;
+
+        half3 matCapMutilResult = result * matCapSample;
+        half3 matAddResult = result + matCapSample;
+        half3 matCapResult = lerp(matAddResult,matCapMutilResult,_MatCapInfo.x);
+       
+        result = lerp(result,matCapResult,_MatCapColor.a);
+        #endif
         
         
         

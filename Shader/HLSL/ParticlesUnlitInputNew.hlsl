@@ -48,6 +48,9 @@
     half4 _SixWayInfo;
     half4 _SixWayEmissionColor;
 
+    half4 _MatCapColor;
+    half4 _MatCapInfo;
+
     half _EdgeFade;
     half4 _NoiseOffset;
     half4 _EmissionMapUVOffset;
@@ -284,6 +287,11 @@
     #ifdef _SCREEN_DISTORT_MODE
         Texture2D _ScreenColorCopy1;
     #endif
+
+#ifdef _MATCAP
+
+#endif
+Texture2D _MatCapTex;
 
     // Pre-multiplied alpha helper
     #if defined(_ALPHAPREMULTIPLY_ON)  //if( blend: One OneMinusSrcAlpha)
@@ -1011,6 +1019,10 @@
 
         return finalTexCoords;
     }
+
+//--------------MatCap------------------
+
+//-
 
     struct AttributesParticle//即URP语境下的appdata
     {
