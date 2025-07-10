@@ -356,9 +356,6 @@
         half4 albedo = 0;
         #if defined(_SCREEN_DISTORT_MODE)
             albedo = half4(cum_noise_xy, 1.0, noiseMask);
-        #elif _FX_LIGHT_MODE_SIX_WAY
-            float4 rigRTBkSample  = BlendTexture(_RigRTBk, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
-            float4 rigLBtFSample  = BlendTexture(_RigLBtF, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
         #else
         
             UNITY_FLATTEN
@@ -399,11 +396,14 @@
             albedo.rgb *= _BaseColorIntensityForTimeline;
 
         #endif
-
-
         
         half alpha = albedo.a;
         half3 result = albedo.rgb;
+        
+        #ifdef _FX_LIGHT_MODE_SIX_WAY
+        float4 rigRTBkSample  = BlendTexture(_RigRTBk, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+        float4 rigLBtFSample  = BlendTexture(_RigLBtF, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+        #endif
       
         UNITY_BRANCH
         if(CheckLocalFlags(FLAG_BIT_HUESHIFT_ON))
@@ -465,11 +465,11 @@
             #elif _FX_LIGHT_MODE_SIX_WAY
             BSDFData bsdfData = (BSDFData)0;
             bsdfData.absorptionRange = GetAbsorptionRange(_SixWayInfo.x);
-            bsdfData.diffuseColor = _BaseColor;
+            bsdfData.diffuseColor = albedo;
             bsdfData.normalWS = inputData.normalWS;
             bsdfData.tangentWS = input.tangentWS;//Check this
-            bsdfData.rigRTBk = rigRTBkSample.xyz;
-            bsdfData.rigLBtF = rigLBtFSample.xyz;
+            bsdfData.rigRTBk = rigRTBkSample.xyz * INV_PI;//AccordingTo SixWayForwardPass
+            bsdfData.rigLBtF = rigLBtFSample.xyz * INV_PI;//AccordingTo SixWayForwardPass
             bsdfData.bakeDiffuseLighting0 = input.bakeDiffuseLighting0;
             bsdfData.bakeDiffuseLighting1 = input.bakeDiffuseLighting1;
             bsdfData.bakeDiffuseLighting2 = input.bakeDiffuseLighting2;

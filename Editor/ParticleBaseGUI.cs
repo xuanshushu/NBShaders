@@ -412,8 +412,13 @@ namespace UnityEditor
                     helper.DrawTexture("六路反方向图(N)","_RigLBtF",drawScaleOffset:false);
                     
                     EditorGUILayout.HelpBox("六路UV跟随主贴图UV及颜色",MessageType.Warning);
+                    
+                    helper.DrawToggle("光照颜色吸收","_SixWayColorAbsorptionToggle",shaderKeyword:"VFX_SIX_WAY_ABSORPTION",drawBlock:
+                        isAbsorption =>
+                        {
+                            helper.DrawVector4Componet("六路吸收强度","_SixWayInfo","x",true,0,1);
+                        });
                         
-                    helper.DrawVector4Componet("六路吸收强度","_SixWayInfo","x",false,0,1);
                     helper.DrawTexture("六路自发光Ramp","_SixWayEmissionRamp",drawScaleOffset:false,drawBlock: rampMap =>
                     {
                         if (rampMap)

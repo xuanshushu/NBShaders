@@ -87,6 +87,7 @@
 	    //-----------SixWayLight----------
     	_RigRTBk("六路正方向图(P)",2D) = "white"{}
     	_RigLBtF("六路反方向图(N)",2D) = "white"{}
+    	_SixWayColorAbsorptionToggle("六路光颜色吸收开关",Float) = 0
     	_SixWayInfo("x:六路吸收强度",Vector) = (0.5,0,0,0)
     	_SixWayEmissionRamp("六路自发光Ramp",2D) = "white"{}
     	[HDR]_SixWayEmissionColor("六路自发光颜色",Color) = (1,0.5,0,1)
@@ -139,9 +140,7 @@
         _DistortionDirection ("扭曲方向xy, 色散强度z", vector) = (1,1,0,0)
         _Distortion_Choraticaberrat_Toggle("扭曲色散开关_Toggle",Float) = 0 
         _Distortion_Choraticaberrat_WithNoise_Toggle("色散受扭曲影响_Toggle",Float) = 1
-        
-        
-        
+	    
         // 流光 ----------
         //[Header(LiuGuang(Anima For CustomData.w).......)]
         //[Toggle(_EMISSION)]_N1 ("EMISSION?", float) = 0
@@ -396,10 +395,11 @@
             #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
 
             //LIGHTING
-            #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
+			#pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
             #pragma shader_feature_local _ _SPECULAR_COLOR
+            #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
             
             
             // -------------------------------------
@@ -506,7 +506,7 @@
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
             #pragma shader_feature_local _ _SPECULAR_COLOR
-            #define VFX_SIX_WAY_ABSORPTION
+            #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
             
             // -------------------------------------
             // Unity defined keywords

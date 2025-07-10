@@ -5,7 +5,6 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "ParticlesUnlitInputNew.hlsl"
 
-
 // Generated from UnityEditor.VFX.HDRP.SixWaySmokeLit+BSDFData
 // PackingRules = Exact
 struct BSDFData
@@ -34,26 +33,31 @@ struct BSDFData
     
 };
 
+#define ABSORPTION_EPSILON max(REAL_MIN, 1e-5)
 
-float3 GetTransmissionWithAbsorption(float transmission, float4 absorptionColor, float absorptionRange)
+real3 ComputeDensityScales(real3 absorptionColor)
 {
-    // absorptionColor.rgb = max(VFX_EPSILON, absorptionColor.rgb);//这只是一个限定值
-    #ifdef VFX_SIX_WAY_ABSORPTION
-        #ifdef VFX_BLENDMODE_PREMULTIPLY
-        transmission /= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f  ;
-        #endif
-    
-        // Empirical value used to parametrize absorption from color
-        const float absorptionStrength = 0.2f;
-        float3 densityScales = 1.0f + log2(absorptionColor.rgb) / log2(absorptionStrength);
-        // Recompute transmission based on density scaling
-        float3 outTransmission = pow(saturate(transmission / absorptionRange), densityScales) * absorptionRange;
+    absorptionColor.rgb = max(ABSORPTION_EPSILON, absorptionColor.rgb);
+
+    // Empirical value used to parametrize absorption from color
+    const real absorptionStrength = 0.2f;
+    return 1.0f + log2(absorptionColor.rgb) / log2(absorptionStrength);
+}
+
+real3 GetTransmissionWithAbsorption(real transmission, real4 absorptionColor, real absorptionRange)
+{
+    #if defined(VFX_SIX_WAY_ABSORPTION)
+        real3 densityScales = ComputeDensityScales(absorptionColor.rgb);
 
         #ifdef VFX_BLENDMODE_PREMULTIPLY
-        outTransmission *= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f  ;
+            absorptionRange *= (absorptionColor.a > 0) ? absorptionColor.a : 1.0f;
         #endif
 
-        return min(absorptionRange, outTransmission); // clamp values out of range
+        // real3 outTransmission = GetTransmissionWithAbsorption(transmission, densityScales, absorptionRange);
+        real3 outTransmission = pow(saturate(transmission / absorptionRange), densityScales);
+        outTransmission *= absorptionRange;
+
+        return outTransmission;
     #else
         return transmission.xxx * absorptionColor.rgb; // simple multiply
     #endif
@@ -112,6 +116,8 @@ CBSDF EvaluateBSDF(float3 L, BSDFData bsdfData)
     return cbsdf;
 }
 
+
+//这一步最好在面板上做完
 half GetAbsorptionRange(float absorptionStrenth)
 {
     return  INV_PI + saturate(absorptionStrenth) * (1 - INV_PI);
@@ -166,7 +172,9 @@ void  GetSixWayEmission(inout  BSDFData bsdfData,Texture2D rampMap,half4 emissio
 
 half3 LightingSixWay(Light light,InputData inputData, BSDFData bsdfData)
 {
-     return EvaluateBSDF(light.direction,bsdfData).diffR*light.color;
+    half3 cbsdf_R = EvaluateBSDF(light.direction,bsdfData).diffR;
+    half3 radiance = light.color * light.distanceAttenuation * light.shadowAttenuation;
+    return PI * cbsdf_R * radiance;
 }
 
 
