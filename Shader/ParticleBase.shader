@@ -302,6 +302,7 @@
         [HideInInspector] _UVModeFlag0("_UVModeFlag0", Integer) = 0
         [HideInInspector] _W9ParticleShaderGUIFoldToggle("_W9ParticleShaderGUIFoldToggle", Integer) = 31//前5个开关默认打开
         [HideInInspector] _W9ParticleShaderGUIFoldToggle1("_W9ParticleShaderGUIFoldToggle1", Integer) = 255//这边默认全开
+        [HideInInspector] _W9ParticleShaderColorChannelFlag("_W9ParticleShaderColorChannelFlag", Integer) = 3//默认主贴图开A通道
         
 //        _offsetUnits("深度偏移单位距离-ignore", range(-2000,2000)) = 0
     }

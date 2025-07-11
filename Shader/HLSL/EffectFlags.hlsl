@@ -134,6 +134,14 @@
     #define FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MASKMAP (11*2)
     #define FLAG_BIT_UVMODE_POS_0_BUMPTEX (12*2)
 
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_MAINTEX_ALPHA (0*2)
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP1 (1*2)
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2 (2*2)
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3 (3*2)
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_NOISE_MASK (4*2)
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_DISSOLVE_MAP (5*2)
+    #define FLAG_BIT_COLOR_CHANNEL_POS_0_DISSOLVE_MASK_MAP (6*2)
+
     float GetCustomData(uint flagProperty,int flagPos,float orignValue,half4 cutstomData1,half4 customData2)
     {
         uint bit =  flagProperty >> flagPos;
@@ -228,5 +236,10 @@
         }
         return baseUVs.cylinderUV;
     }
+
+ 
+
+
+
 
 #endif

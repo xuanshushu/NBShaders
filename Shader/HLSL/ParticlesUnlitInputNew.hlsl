@@ -146,6 +146,8 @@
 
     uint _UVModeFlag0;
 
+    uint _W9ParticleShaderColorChannelFlag;
+
     CBUFFER_END
 
 
@@ -182,6 +184,7 @@
             return -1;
         }
     }
+
 
     SamplerState sampler_linear_repeat;
     SamplerState sampler_linear_clamp;
@@ -251,6 +254,15 @@
         }
     }
 
+    half GetColorChannel(half4 color, int bitPos)
+    {
+        uint bits = _W9ParticleShaderColorChannelFlag >> bitPos;
+        bits = bits & 3;
+        if (bits == 0) return color.x;
+        if (bits == 1) return color.y;
+        if (bits == 2) return color.z;
+        return color.w;
+    }
  
 
     #include "../HLSL/EffectFlags.hlsl"

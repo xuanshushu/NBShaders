@@ -19,7 +19,8 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const string foldOutFlagName1 = "_W9ParticleShaderGUIFoldToggle1";
     public static int foldOutFlagId1 = Shader.PropertyToID(foldOutFlagName1);
 
-    
+    public const string colorChannelFlagName = "_W9ParticleShaderColorChannelFlag";
+    public static int colorChannelFlagId = Shader.PropertyToID(colorChannelFlagName);
     protected override int GetShaderFlagsId(int index = 0)
     {
         switch (index)
@@ -38,6 +39,9 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
             
             case 4:
                 return foldOutFlagId1;
+            
+            case 5:
+                return colorChannelFlagId;
         
             default:
                 return FlagsId;
@@ -62,6 +66,9 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
             
             case 4:
                 return foldOutFlagName1;
+            
+            case 5:
+                return colorChannelFlagName;
                 
             default:
                 return FlagsName;
@@ -586,14 +593,6 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         Cylinder            //3 0b_11
     }
     
-    // public enum MeshSourceMode
-    // {
-    //     ParticleSystem,
-    //     Mesh,
-    //     RawImage,
-    //     Sprite
-    // }
-    
     public const int FLAG_BIT_UVMODE_POS_0_MAINTEX = 0 * 2;
     public const int FLAG_BIT_UVMODE_POS_0_MASKMAP = 1 * 2;
     public const int FLAG_BIT_UVMODE_POS_0_MASKMAP_2 = 2 * 2;
@@ -668,6 +667,43 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         return isUvMode;
     }
     
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_MAINTEX_ALPHA = 0 * 2;
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP1 = 1 * 2;
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2 = 2 * 2;
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3 = 3 * 2;
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_NOISE_MASK = 4 * 2;
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_DISSOLVE_MAP = 5 * 2;
+    public const int FLAG_BIT_COLOR_CHANNEL_POS_0_DISSOLVE_MASK_MAP = 6 * 2;
     
+
+    public enum ColorChannel
+    {
+        X,
+        Y,
+        Z,
+        W
+    }
+
+    public void SetColorChanel(ColorChannel channel, int colorChannelFlagPos)
+    {
+        int colorChannelFlag = material.GetInteger(colorChannelFlagId);
+        
+        int clearFlag = 0b_11 << colorChannelFlagPos;
+        clearFlag = ~ clearFlag;
+        
+        colorChannelFlag &= clearFlag;
+        int channelBit = (int)channel << colorChannelFlagPos;
+        colorChannelFlag |= channelBit;
+        
+        material.SetInteger(colorChannelFlagId,colorChannelFlag);
+    }
+
+    public ColorChannel GetColorChanel(int colorChannelFlagPos)
+    {
+        int colorChannelFlag = material.GetInteger(colorChannelFlagId);
+        colorChannelFlag = colorChannelFlag >> colorChannelFlagPos;
+        colorChannelFlag &= 0b_11;
+        return (ColorChannel)colorChannelFlag;
+    }
 
 }
