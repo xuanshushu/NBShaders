@@ -28,7 +28,7 @@
         _InvertFresnel_Toggle("__InvertFresnel_Toggle",Float) = 0
         _HueShift_Toggle("__HueShift_Toggle",Float) = 0
         _BackFaceColor_Toggle("_BackFaceColor_Toggle",Float) = 0
-        _BackFristPassToggle("_BackFirstPassToggle",Float) = 0
+        _BackFirstPassToggle("_BackFirstPassToggle",Float) = 0
         
         _PolarCordinateOnlySpecialFunciton_Toggle("极坐标仅对特殊功能生效_Toggle",Float) = 0
         
@@ -102,6 +102,11 @@
 
         //时间缩放影响开关----------
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
+    	
+    	_StencilWithoutPlayerToggle("剔除主角色开关",Float) = 0.0
+    	
+    	
+    	
         
         
         // MaskMap------------
@@ -300,8 +305,9 @@
         [HideInInspector] _W9ParticleCustomDataFlag2("_W9ParticleCustomDataFlag2", Integer) = 0
         [HideInInspector] _W9ParticleCustomDataFlag3("_W9ParticleCustomDataFlag3", Integer) = 0
         [HideInInspector] _UVModeFlag0("_UVModeFlag0", Integer) = 0
-        [HideInInspector] _W9ParticleShaderGUIFoldToggle("_W9ParticleShaderGUIFoldToggle", Integer) = 31//前5个开关默认打开
+        [HideInInspector] _W9ParticleShaderGUIFoldToggle("_W9ParticleShaderGUIFoldToggle", Integer) = 3//前2个开关默认打开
         [HideInInspector] _W9ParticleShaderGUIFoldToggle1("_W9ParticleShaderGUIFoldToggle1", Integer) = 255//这边默认全开
+        [HideInInspector] _W9ParticleShaderGUIFoldToggle2("_W9ParticleShaderGUIFoldToggle2", Integer) = 255//这边默认全开
         [HideInInspector] _W9ParticleShaderColorChannelFlag("_W9ParticleShaderColorChannelFlag", Integer) = 3//默认主贴图开A通道
         
 //        _offsetUnits("深度偏移单位距离-ignore", range(-2000,2000)) = 0

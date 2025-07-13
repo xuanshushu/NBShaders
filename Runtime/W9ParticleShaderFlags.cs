@@ -18,6 +18,9 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     
     public const string foldOutFlagName1 = "_W9ParticleShaderGUIFoldToggle1";
     public static int foldOutFlagId1 = Shader.PropertyToID(foldOutFlagName1);
+    
+    public const string foldOutFlagName2 = "_W9ParticleShaderGUIFoldToggle2";
+    public static int foldOutFlagId2 = Shader.PropertyToID(foldOutFlagName2);
 
     public const string colorChannelFlagName = "_W9ParticleShaderColorChannelFlag";
     public static int colorChannelFlagId = Shader.PropertyToID(colorChannelFlagName);
@@ -34,6 +37,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
             case 2:
                 return WrapFlagsId;
             
+            //FoldOut必须要紧挨着，因为按照Index去拿AnimBool
             case 3:
                 return foldOutFlagId;
             
@@ -41,6 +45,9 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
                 return foldOutFlagId1;
             
             case 5:
+                return foldOutFlagId2;
+            
+            case 6:
                 return colorChannelFlagId;
         
             default:
@@ -196,43 +203,43 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutDepthOutline= 1 << 28;
     public const int foldOutVertexOffset= 1 << 29;
     public const int foldOutParallexMapping= 1 << 30;
-    // public const int foldOutPortal= 1 << 31;
+    // public const int foldOutBit1Portal= 1 << 31;
     
     
 
 
-    public const int foldOutBit2UVModeMainTex = 1 << 0;
-    public const int foldOutBit2UVModeMaskMap= 1 << 1;
-    public const int foldOutBit2UVModeMaskMap2= 1 << 2;
-    public const int foldOutBit2UVModeMaskMap3= 1 << 3;
-    public const int foldOutBit2UVModeNoiseMap = 1 << 4;
-    public const int foldOutBit2UVModeNoiseMaskMap = 1 << 5;
-    public const int foldOutBit2UVModeEmissionMap = 1 << 6;
-    public const int foldOutBit2UVModeDissolveMap = 1 << 7;
-    public const int foldOutBit2UVModeDissolveMaskMap = 1 << 8;
-    public const int foldOutBit2UVModeColorBlendMap = 1 << 9;
-    public const int foldOutBit2UVModeVertexOffsetMap = 1 << 10;
-    public const int foldOutBit2UVModeVertexOffsetMaskMap = 1 << 11;
-    public const int foldOutBit2UVModeBumpTex = 1 << 12;
+    public const int foldOutBit1UVModeMainTex = 1 << 0;
+    public const int foldOutBit1UVModeMaskMap= 1 << 1;
+    public const int foldOutBit1UVModeMaskMap2= 1 << 2;
+    public const int foldOutBit1UVModeMaskMap3= 1 << 3;
+    public const int foldOutBit1UVModeNoiseMap = 1 << 4;
+    public const int foldOutBit1UVModeNoiseMaskMap = 1 << 5;
+    public const int foldOutBit1UVModeEmissionMap = 1 << 6;
+    public const int foldOutBit1UVModeDissolveMap = 1 << 7;
+    public const int foldOutBit1UVModeDissolveMaskMap = 1 << 8;
+    public const int foldOutBit1UVModeColorBlendMap = 1 << 9;
+    public const int foldOutBit1UVModeVertexOffsetMap = 1 << 10;
+    public const int foldOutBit1UVModeVertexOffsetMaskMap = 1 << 11;
+    public const int foldOutBit1UVModeBumpTex = 1 << 12;
     
     //留一些位置给以后可能会增加的贴图。
-    public const int foldOutPortal= 1 << 20;
-    public const int foldOutZOffset= 1 << 21;
-    public const int foldOutCustomStencilTest= 1 << 22;
-    public const int foldOutTaOption = 1 << 23;
-    public const int foldOutMianTexContrast= 1 << 24;
-    public const int foldOutVertexOffsetMask= 1 << 25;
-    public const int foldOutMainTexColorRefine= 1 << 26;
-    public const int foldOutBitLightOption= 1 << 27;
-    public const int foldOutBitShaderKeyword= 1 << 28;
-    public const int foldOutBitBumpTex= 1 << 29;
+    public const int foldOutBit1Portal= 1 << 20;
+    public const int foldOutBit1ZOffset= 1 << 21;
+    public const int foldOutBit1CustomStencilTest= 1 << 22;
+    public const int foldOutBit1TaOption = 1 << 23;
+    public const int foldOutBit1MianTexContrast= 1 << 24;
+    public const int foldOutBit1VertexOffsetMask= 1 << 25;
+    public const int foldOutBit1MainTexColorRefine= 1 << 26;
+    public const int foldOutBit1LightOption= 1 << 27;
+    public const int foldOutBit1ShaderKeyword= 1 << 28;
+    public const int foldOutBit1BumpTex= 1 << 29;
+    
+    public const int foldOutBit2BumpTexToggle= 1 << 0;
+    public const int foldOutBit2MatCapToggle= 1 << 1;
 
 
     #region CustomDataCodes
 
-    
-
-    
     public const string CustomDataFlag0Name = "_W9ParticleCustomDataFlag0";
     public const string CustomDataFlag1Name = "_W9ParticleCustomDataFlag1";
     public const string CustomDataFlag2Name = "_W9ParticleCustomDataFlag2";
@@ -253,6 +260,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         CustomData2Y,
         CustomData2Z,
         CustomData2W,
+        UnKnownOrMixed = -1
     }
 
     public const int FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X = 0 * 4;
@@ -590,7 +598,8 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         DefaultUVChannel,   //0 0b_00
         SpecialUVChannel,   //1 0b_01
         PolarOrTwirl,       //2 0b_10
-        Cylinder            //3 0b_11
+        Cylinder, //3 0b_11
+        UnknownOrMixed = -1
     }
     
     public const int FLAG_BIT_UVMODE_POS_0_MAINTEX = 0 * 2;
@@ -654,10 +663,6 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         {
             uint checkBit = uvModeFlag0 >> (i * 2);
             checkBit = checkBit & 0b_11;
-            // Debug.Log("i:"+i);
-            // Debug.Log("uvModeFlag0:"+Convert.ToString(uvModeFlag0,2));
-            // Debug.Log("checkBit:"+Convert.ToString(checkBit,2));
-            // Debug.Log("uvModeBit:"+Convert.ToString(uvModeBit,2));
             if (checkBit == uvModeBit)
             {
                 isUvMode = true;
@@ -681,7 +686,8 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         X,
         Y,
         Z,
-        W
+        W,
+        UnKnownOrMixedValue
     }
 
     public void SetColorChanel(ColorChannel channel, int colorChannelFlagPos)
