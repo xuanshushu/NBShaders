@@ -509,33 +509,6 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         isCustomData1On |= CheckCustomData(1, 2);
         isCustomData1On |= CheckCustomData(1, 3);
         return isCustomData1On;
-        
-        // int prop0Flag = material.GetInteger(CustomDataFlag0Id);
-        //
-        // int i = 0;
-        // while (i<8)
-        // {
-        //     int bit = prop0Flag >> (4 * i);
-        //     if ((bit & 0b_1000) > 0 && (bit & 0b_0100) > 0)
-        //     {
-        //         return true;
-        //     }
-        //
-        //     i += 1;
-        // }
-        //
-        // i = 0;
-        // int prop1Flag = material.GetInteger(CustomDataFlag1Id);
-        // while (i<8)
-        // {
-        //     int bit = prop1Flag >> (4 * i);
-        //     if ((bit & 0b_1000) > 0 && (bit & 0b_0100) > 0)
-        //     {
-        //         return true;
-        //     }
-        //     i += 1;
-        // }
-        // return false;
     }
     
     public bool IsCustomData2On()
@@ -550,32 +523,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
         isCustomData1On |= CheckCustomData(2, 2);
         isCustomData1On |= CheckCustomData(2, 3);
         return isCustomData1On;
-        // int prop0Flag = material.GetInteger(CustomDataFlag0Id);
-        //
-        // int i = 0;
-        // while (i<8)
-        // {
-        //     int bit = prop0Flag >> (4 * i);
-        //     if ((bit & 0b_1000) > 0 && (bit & 0b_0100) == 0)
-        //     {
-        //         return true;
-        //     }
-        //
-        //     i += 1;
-        // }
-        //
-        // i = 0;
-        // int prop1Flag = material.GetInteger(CustomDataFlag1Id);
-        // while (i<8)
-        // {
-        //     int bit = prop1Flag >> (4 * i);
-        //     if ((bit & 0b_1000) > 0 && (bit & 0b_0100) == 0)
-        //     {
-        //         return true;
-        //     }
-        //     i += 1;
-        // }
-        // return false;
+   
     }
     #endregion
 

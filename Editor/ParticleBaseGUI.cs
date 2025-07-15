@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using stencilTestHelper;
 using UnityEditor.AnimatedValues;
+using System.Reflection;
 
 namespace UnityEditor
 {
@@ -20,6 +21,7 @@ namespace UnityEditor
         private int lastFlagBit;
         // private bool isCustomedStencil = false;//isCustomStencil应该各个材质各自控制。
         private readonly int _isCustomedStencilPropID = Shader.PropertyToID("_CustomStencilTest");
+        private readonly string _defaultStencilKey = "ParticleBaseDefault";
 
         private StencilValuesConfig _stencilValuesConfig;
 
@@ -34,10 +36,6 @@ namespace UnityEditor
                 
                 mats.Add(targetMat);
                 shaderFlags.Add(new W9ParticleShaderFlags(mats[i]));
-                if (targetMat)
-                {
-                    targetMat.SetFloat(_isCustomedStencilPropID,0);//RefreshEveryFrame
-                }
                 
             }
             matEditor = materialEditor;
@@ -78,8 +76,17 @@ namespace UnityEditor
             }
             
             DoAfterDraw();
-            
-            
+
+            //多选状态下同步ShaderFlag
+            if (mats.Count > 1)
+            {
+                for (int i = 1; i < mats.Count; i++)
+                {
+                    mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId,mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId));
+                    mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId1,mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId1));
+                    mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId2,mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId2));
+                }
+            }
             materialEditor.Repaint();
         }
 
@@ -272,17 +279,21 @@ namespace UnityEditor
                 
            
                 
-                _helper.DrawToggle("剔除主角色","_StencilWithoutPlayerToggle",shaderKeyword:"_STENCIL_WITHOUT_PLAYER", drawBlock: isToggle =>
+                _helper.DrawToggle("剔除主角色","_StencilWithoutPlayerToggle",shaderKeyword:"_STENCIL_WITHOUT_PLAYER", drawEndChangeCheck: isToggle =>
                 {
                     if (!isToggle.hasMixedValue)
                     {
-                        if (isToggle.floatValue > 0.5f)
+                        for (int i = 0; i < mats.Count; i++)
                         {
-                            for (int i = 0; i < mats.Count; i++)
+                            if (isToggle.floatValue > 0.5f)
                             {
-                                StencilTestHelper.SetMaterialStencil(mats[i], "ParticleWithoutPlayer", _stencilValuesConfig,
-                                    out int queue);
+                                StencilTestHelper.SetMaterialStencil(mats[i], "ParticleWithoutPlayer", _stencilValuesConfig, out int queue);
                                 mats[i].SetFloat(_isCustomedStencilPropID,1.0f);
+                            }
+                            else
+                            {
+                                StencilTestHelper.SetMaterialStencil(mats[i], _defaultStencilKey, _stencilValuesConfig, out int queue);
+                                mats[i].SetFloat(_isCustomedStencilPropID,0.0f);
                             }
                         }
                     }
@@ -770,26 +781,24 @@ namespace UnityEditor
                     drawEndChangeCheck: (isToggle) => {
                         if (!isToggle.hasMixedValue)
                         {
-                            if (isToggle.floatValue > 0.5f)
+                            for (int i = 0; i < mats.Count; i++)
                             {
-                                for (int i = 0; i < mats.Count; i++)
+                                if (isToggle.floatValue > 0.5f)
                                 {
-                                    StencilTestHelper.SetMaterialStencil(mats[i], "ParticleBaseDecal", _stencilValuesConfig,
-                                        out int ignore);
+                                    StencilTestHelper.SetMaterialStencil(mats[i], "ParticleBaseDecal", _stencilValuesConfig, out int ignore);
+                                    mats[i].SetFloat(_isCustomedStencilPropID,1f);
                                     mats[i].SetFloat("_Cull",(float)RenderFace.Back);
                                     mats[i].SetFloat("_ZTest",(float)CompareFunction.GreaterEqual);
-                                    mats[i].SetFloat(_isCustomedStencilPropID,1);
                                 }
-                            }
-                            else
-                            {
-                                for (int i = 0; i < mats.Count; i++)
+                                else
                                 {
-                                    //Stencil会自动默认归位
+                                    StencilTestHelper.SetMaterialStencil(mats[i], _defaultStencilKey, _stencilValuesConfig,out int ignore);
+                                    mats[i].SetFloat(_isCustomedStencilPropID,0f);
                                     mats[i].SetFloat("_Cull",(float)RenderFace.Front);
                                     mats[i].SetFloat("_ZTest",(float)CompareFunction.LessEqual);
                                 }
                             }
+                          
                         }
                     });
            
@@ -823,24 +832,41 @@ namespace UnityEditor
                                 }
                             });
                     });
+
+                Action<Material> SetPortal = (mat) => {
+                        StencilTestHelper.SetMaterialStencil(mat, "ParticalBasePortal",_stencilValuesConfig, out int Ignore);
+                        mat.SetFloat(_isCustomedStencilPropID,1f);
+                        mat.SetFloat("_ZTest",(float)CompareFunction.GreaterEqual);
+                };
                 
+                Action<Material> SetPortalMask = (mat) => {
+                        StencilTestHelper.SetMaterialStencil(mat, "ParticalBasePortalMask", _stencilValuesConfig, out int Ignore);
+                        if (mat.GetFloat("_TransparentMode") == (float)TransparentMode.Transparent)
+                        {
+                            mat.SetFloat("_TransparentMode", (float)TransparentMode.CutOff);
+                        }
+                        mat.SetFloat("_ZTest", (float)CompareFunction.LessEqual);
+                };
+
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1Portal,4,GetAnimBoolIndex(4),"模板视差", "_Portal_Toggle", fontStyle:FontStyle.Bold,
                 drawBlock: isPortalToggle =>
                 {
                     _helper.DrawToggle("模板视差蒙版", "_Portal_MaskToggle", drawEndChangeCheck: isPortalMaskToggle =>
                     {
-                        if (!isPortalMaskToggle.hasMixedValue && isPortalMaskToggle.floatValue > 0.5f)
+                        if (!isPortalMaskToggle.hasMixedValue)
                         {
+                            
                             for (int i = 0; i < mats.Count; i++)
                             {
-                                StencilTestHelper.SetMaterialStencil(mats[i], "ParticalBasePortalMask",
-                                    _stencilValuesConfig, out int Ignore);
-                                if (mats[i].GetFloat("_TransparentMode") == (float)TransparentMode.Transparent)
+                                if (isPortalMaskToggle.floatValue > 0.5f)
                                 {
-                                    mats[i].SetFloat("_TransparentMode", (float)TransparentMode.CutOff);
+                                    SetPortalMask(mats[i]);
+                                }
+                                else//Portal此时一定是打开的。
+                                {
+                                    SetPortal(mats[i]);
                                 }
 
-                                mats[i].SetFloat("_ZTest", (float)CompareFunction.LessEqual);
                             }
                         }
                     });
@@ -852,15 +878,19 @@ namespace UnityEditor
                         {
                             if (isPortalToggle.floatValue > 0.5f)
                             {
-                                mats[i].SetFloat(_isCustomedStencilPropID,1f);
                                 if (mats[i].GetFloat("_Portal_MaskToggle") < 0.5f)
                                 {
-                                    StencilTestHelper.SetMaterialStencil(mats[i], "ParticalBasePortal",_stencilValuesConfig, out int Ignore);
-                                    mats[i].SetFloat("_ZTest",(float)CompareFunction.GreaterEqual);
+                                    SetPortal(mats[i]);
+                                }
+                                else
+                                {
+                                    SetPortalMask(mats[i]);
                                 }
                             }
                             else
                             {
+                                StencilTestHelper.SetMaterialStencil(mats[i], _defaultStencilKey, _stencilValuesConfig,out int ignore);
+                                mats[i].SetFloat(_isCustomedStencilPropID,0f);
                                 mats[i].SetFloat("_TransparentMode",(float)TransparentMode.Transparent) ;
                                 mats[i].SetFloat("_ZTest",(float)CompareFunction.LessEqual);
                             }
@@ -901,21 +931,22 @@ namespace UnityEditor
         {
             if (_uiEffectEnabled == 0)
             {
-                _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1ZOffset,4,GetAnimBoolIndex(4),"深度偏移", "_ZOffset_Toggle", fontStyle:FontStyle.Bold,drawBlock: (isToggle) =>
-                {
-                   
-                    matEditor.ShaderProperty(_helper.GetProperty("_offsetFactor"), "OffsetFactor");
-                    matEditor.ShaderProperty(_helper.GetProperty("_offsetUnits"), "Offset单位");
-                  
-                    if(!isToggle.hasMixedValue && isToggle.floatValue < 0.5f)
-                    {
-                        for (int i = 0; i < mats.Count; i++)
+                _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1ZOffset,4,GetAnimBoolIndex(4),"深度偏移", "_ZOffset_Toggle", fontStyle:FontStyle.Bold,drawBlock:
+                    (isToggle) => {
+
+                        matEditor.ShaderProperty(_helper.GetProperty("_offsetFactor"), "OffsetFactor");
+                        matEditor.ShaderProperty(_helper.GetProperty("_offsetUnits"), "Offset单位");
+                    },
+                    drawEndChangeCheck:(isToggle)=>{
+                        if(!isToggle.hasMixedValue && isToggle.floatValue < 0.5f)
                         {
-                            mats[i].SetFloat("_offsetFactor",0f);
-                            mats[i].SetFloat("_offsetUnits",0f);
+                            for (int i = 0; i < mats.Count; i++)
+                            {
+                                mats[i].SetFloat("_offsetFactor",0f);
+                                mats[i].SetFloat("_offsetUnits",0f);
+                            }
                         }
-                    }
-                });
+                    });
             }
 
             if (_uiEffectEnabled == 0||_uiParticleEnabled == 1)
@@ -943,59 +974,87 @@ namespace UnityEditor
                 }
 
             }
-            // matEditor.RenderQueueField();
+            
             _helper.DrawRenderQueue(_helper.GetProperty("_QueueBias"));
            
-            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1CustomStencilTest,4,GetAnimBoolIndex(4),"模板调试开关","_CustomStencilTest",drawBlock: isToggle =>
-            {
+            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1CustomStencilTest,4,GetAnimBoolIndex(4),"模板手动调试开关","_CustomStencilTest",
+                drawBlock: isToggle => {
+                    bool hasMixedKeyValue = false;
+                    int stencilKeyIndexID = Shader.PropertyToID("_StencilKeyIndex");
+                    string originKey = "";
+                    for (int i = 0; i < mats.Count; i++)
+                    {
+                        string key = _stencilValuesConfig.GetKeyByIndex(mats[i].GetInt(stencilKeyIndexID));
+                        if (i == 0)
+                        {
+                            originKey = key;
+                        }
+                        else
+                        {
+                            if (originKey != key) hasMixedKeyValue = true;
+                        }
+                        hasMixedKeyValue = false;
+                    }
+                    
+                    EditorGUI.showMixedValue = hasMixedKeyValue;
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.TextField("当前Config:", originKey);
+                    EditorGUI.EndDisabledGroup();
+                    EditorGUI.showMixedValue = false;
+                    
                     matEditor.ShaderProperty(_helper.GetProperty("_Stencil"),"模板值");
                     matEditor.ShaderProperty(_helper.GetProperty("_StencilComp"),"模板比较方式");
                     matEditor.ShaderProperty(_helper.GetProperty("_StencilOp"),"模板处理方式");
-                    
+            
             }, 
             drawEndChangeCheck: isToggle =>
             {
-                if (!isToggle.hasMixedValue && isToggle.floatValue > 0.5f)
+                if (!isToggle.hasMixedValue )
                 {
                     for (int i = 0; i < mats.Count; i++)
                     {
-                        mats[i].SetFloat(_isCustomedStencilPropID,1f);
+                        if (isToggle.floatValue > 0.5f)
+                        {
+                            mats[i].SetFloat(_isCustomedStencilPropID,1f);
+                        }
+                        else
+                        {
+                            StencilTestHelper.SetMaterialStencil(mats[i],_defaultStencilKey,_stencilValuesConfig,out int ignore);
+                        }
+                        
                     }
                 }
             });
 
 
-            if (_lastKeywordsLength == mats[0].shaderKeywords.Length)
+            if (mats.Count == 1)
             {
                 _helper.DrawFoldOut(W9ParticleShaderFlags.foldOutBit1ShaderKeyword,4,GetAnimBoolIndex(4),"已开启Keyword:",drawBlock:
                     () =>
                     {
-                        string[] shaderKeywords = mats[0].shaderKeywords;
-                        for (int i = 0; i < shaderKeywords.Length; i++)
+                        List<string> shaderKeywords = new List<string>();
+                        foreach (var localKeyword in mats[0].enabledKeywords)
                         {
-                            EditorGUILayout.LabelField(shaderKeywords[i]);
+                            shaderKeywords.Add(localKeyword.name);
+                        }
+
+                        if (shaderKeywords != null && shaderKeywords.Count > 0)
+                        {
+                            float height = EditorGUIUtility.singleLineHeight * shaderKeywords.Count;
+                            Rect labelRect = EditorGUILayout.GetControlRect(false, height);
+                            string label = "";
+                            for (int i = 0; i < shaderKeywords.Count; i++)
+                            {
+                                label += shaderKeywords[i] ;
+                                label += "\n";
+                            }
+                            EditorGUI.LabelField(labelRect,label);
                         }
                         
                     });
             }
-            else
-            {
-                _lastKeywordsLength = mats[0].shaderKeywords.Length;
-            }
-
-           
-            for (int i = 0; i < mats.Count; i++)
-            {
-                if (_uiEffectEnabled == 0 && mats[i].GetFloat(_isCustomedStencilPropID) < 0.5f )
-                {
-                    StencilTestHelper.SetMaterialStencil(mats[i], "ParticleBaseDefault", _stencilValuesConfig, out int ignore);
-                }
-            }
         }
 
-        //避免报错:ArgumentException: Getting control 9's position in a group with only 9 controls when doing repaint
-        //主要原因是Layout和RePaint事件之间Keywords数量有更新。
-        private int _lastKeywordsLength = 0;
         void DrawNoiseAffectBlock(Action drawBlock)
         {
             if (_noiseEnabled >= 0)
@@ -1188,11 +1247,12 @@ namespace UnityEditor
 
 
                 TransparentMode transparentMode = (TransparentMode)mats[i].GetFloat("_TransparentMode");
+                int queueBias = (int)mats[i].GetFloat("_QueueBias");
                 switch (_transparentMode)
                 {
                     case TransparentMode.Opaque:
                         mats[i].SetInt("_ZWrite", (int)1);
-                        mats[i].renderQueue = 2100 + (int)_helper.GetProperty("_QueueBias").floatValue; //3D粒子永远最前显示
+                        mats[i].renderQueue = 2100 + queueBias; //3D粒子永远最前显示
                         mats[i].SetInt("_Blend", (int)BlendMode.Opaque);
                         break;
                     case TransparentMode.Transparent:
@@ -1211,7 +1271,7 @@ namespace UnityEditor
                             defaultQueue = 3000;
                         }
 
-                        mats[i].renderQueue = defaultQueue + (int)_helper.GetProperty("_QueueBias").floatValue; //3D粒子永远最前显示
+                        mats[i].renderQueue = defaultQueue + queueBias; //3D粒子永远最前显示
 
                         BlendMode bm = (BlendMode)mats[i].GetFloat("_Blend");
                         if (bm == BlendMode.Opaque)
@@ -1222,7 +1282,7 @@ namespace UnityEditor
                         break;
                     case TransparentMode.CutOff:
                         mats[i].SetInt("_ZWrite", (int)1);
-                        mats[i].renderQueue = 2450 + (int)_helper.GetProperty("_QueueBias").floatValue; //3D粒子永远最前显示
+                        mats[i].renderQueue = 2450 + queueBias; //3D粒子永远最前显示
                         mats[i].SetInt("_Blend", (int)BlendMode.Opaque);
                         break;
                 }
@@ -1859,5 +1919,20 @@ namespace UnityEditor
         {
             return foldOutFlagIndex - 3;
         }
+        
+        // private static readonly FieldInfo _validKeywordsField = typeof(Material)
+        //     .GetField("m_ValidKeywords", BindingFlags.NonPublic | BindingFlags.Instance);
+        //
+        // public static string[] GetValidKeywordsDirect(Material material)
+        // {
+        //     if (_validKeywordsField == null) 
+        //     {
+        //         Debug.LogError("m_ValidKeywords field not found!");
+        //         return null;
+        //     }
+        //
+        //     var keywords = _validKeywordsField.GetValue(material) as string[];
+        //     return keywords;
+        // }
     }
 }

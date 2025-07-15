@@ -214,8 +214,9 @@
         [HideInInspector] _ZTest ("__ztest-ignore", Float) = 4.0 //默认值LEqual
         [HideInInspector] _ZWrite("__ZWrite-ignore", Float) = 0 //默认值LEqual
         // [HideInInspector] _ZTestt ("__ztestt", Float) = 4.0//雨轩：注释掉了。。。这是个什么鬼。。。
-
+	    
         _CustomStencilTest ("__CustomStencilTest-ignore", Float) = 0
+    	_StencilKeyIndex("__StencilKeyIndex-ignore",Float) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)] _StencilComp ("__StencilComp-ignore", Float) = 8
         _Stencil("Stencil ID-ignore", Float) = 0
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilOp("Stencil Operation-ignore", Float) = 0
