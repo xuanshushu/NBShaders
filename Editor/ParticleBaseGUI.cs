@@ -47,6 +47,8 @@ namespace UnityEditor
             matEditor = materialEditor;
             _helper.Init(materialEditor, props, shaderFlags.ToArray(), mats);
             
+            EditorGUI.BeginChangeCheck();
+            
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMeshOption,3,GetAnimBoolIndex(3),"模式设置", () => DrawMeshOptions());
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitBaseOption,3,GetAnimBoolIndex(3),"基本全局功能", () => DrawBaseOptions());
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMainTexOption,3,GetAnimBoolIndex(3),"主贴图功能", () => DrawMainTexOptions());
@@ -59,23 +61,30 @@ namespace UnityEditor
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitFeatureOption,3,GetAnimBoolIndex(3),"特别功能", () => DrawFeatureOptions());
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBit1TaOption,4,GetAnimBoolIndex(4),"TA调试", () => DrawTaOptions());
             
-            //遍历整个场景，看哪些 粒子系统 用了这个材质。会填充m_RenderersUsingThisMaterial
             if (mats.Count == 1)
             {
-                CacheRenderersUsingThisMaterial(mats[0], 0);
-            
-
-                if (_uiEffectEnabled == 0||_uiParticleEnabled == 1)
+                if (_meshSourceMode == MeshSourceMode.Particle || _meshSourceMode == MeshSourceMode.UIParticle)
                 {
                     DoVertexStreamsArea(mats[0], m_RenderersUsingThisMaterial, 0);//填充stream和stremList
+                    mats[0].EnableKeyword("_CUSTOMDATA");
+                    
                 }
                 else
                 {
                     mats[0].DisableKeyword("_CUSTOMDATA");
                 }
             }
+            if( EditorGUI.EndChangeCheck())
+            {
+                //遍历整个场景，看哪些 粒子系统 用了这个材质。会填充m_RenderersUsingThisMaterial
+                if (mats.Count == 1 && (_meshSourceMode == MeshSourceMode.Particle || _meshSourceMode == MeshSourceMode.UIParticle))
+                {
+                    CacheRenderersUsingThisMaterial(mats[0], 0);
+                }
+
+                DoAfterDraw();
+            }
             
-            DoAfterDraw();
 
             //多选状态下同步ShaderFlag
             if (mats.Count > 1)
@@ -91,7 +100,8 @@ namespace UnityEditor
         }
 
         int _uiEffectEnabled = -1;//0 false,1 true,-1 unKnow | MixedValue
-        int _uiParticleEnabled = -1;
+        int _meshSourceModeIsParticle = -1;//Particle Or UI Particle;
+        private int _useGraphicMainTex = -1;//UI Sprite/UI RawImage
         int _noiseEnabled = -1 ;//扭曲
         
         private MeshSourceMode _meshSourceMode = MeshSourceMode.UnKnowOrMixed;
@@ -116,6 +126,8 @@ namespace UnityEditor
                     MeshSourceMode mode = (MeshSourceMode)mats[i].GetFloat("_MeshSourceMode");
 
                     int uiEffectEnabled;
+                    int meshSourceModeIsParticle;
+                    int useGraphicMainTex;
                     if (mode == MeshSourceMode.UIEffectRawImage || mode == MeshSourceMode.UIEffectSprite || mode == MeshSourceMode.UIEffectBaseMap||mode == MeshSourceMode.UIParticle)
                     {
                         uiEffectEnabled = 1;
@@ -125,22 +137,29 @@ namespace UnityEditor
                         uiEffectEnabled = 0;
                     }
 
-                   
-                    
-                    int uiParticleEnabled;
-                    if (mode == MeshSourceMode.UIParticle)
+                    if (mode == MeshSourceMode.Particle || mode == MeshSourceMode.UIParticle)
                     {
-                        uiParticleEnabled = 1;
+                        meshSourceModeIsParticle = 1;
                     }
                     else
                     {
-                        uiParticleEnabled = 0;
+                        meshSourceModeIsParticle = 0;
+                    }
+
+                    if (mode == MeshSourceMode.UIEffectSprite || mode == MeshSourceMode.UIEffectRawImage)
+                    {
+                        useGraphicMainTex = 1;
+                    }
+                    else
+                    {
+                        useGraphicMainTex = 0;
                     }
                     
                     if (i == 0)
                     {
                         _uiEffectEnabled = uiEffectEnabled;
-                        _uiParticleEnabled = uiParticleEnabled;
+                        _meshSourceModeIsParticle = meshSourceModeIsParticle;
+                        _useGraphicMainTex = useGraphicMainTex;
                     }
                     else
                     {
@@ -149,16 +168,21 @@ namespace UnityEditor
                             _uiEffectEnabled = -1;
                         }
 
-                        if (_uiParticleEnabled != uiParticleEnabled)
+                        if (_meshSourceModeIsParticle != meshSourceModeIsParticle)
                         {
-                            _uiParticleEnabled = -1;
+                            _meshSourceModeIsParticle = -1;
+                        }
+
+                        if (_useGraphicMainTex != useGraphicMainTex)
+                        {
+                            _useGraphicMainTex = -1;
                         }
                     }
                 }
                 
                 if (checkIsParicleSystem)
                 {
-                    if (!(_meshSourceMode != MeshSourceMode.Particle || _uiParticleEnabled != 1))
+                    if (_meshSourceModeIsParticle <= 0 )
                     {
                         EditorGUILayout.HelpBox("检测到材质用在粒子系统上，和设置不匹配",MessageType.Error);
                     }
@@ -185,7 +209,18 @@ namespace UnityEditor
         
                     if (_transparentMode == TransparentMode.Transparent)
                     {
-                        _helper.DrawPopUp("混合模式","_Blend",blendModeNames);
+                        _helper.DrawPopUp("混合模式","_Blend",blendModeNames,drawBlock: blendProp =>
+                        {
+                            if (!blendProp.hasMixedValue)
+                            {
+                                BlendMode blendMode = (BlendMode)blendProp.floatValue;
+                                if (blendMode == BlendMode.Premultiply || blendMode == BlendMode.Additive)
+                                {
+                                    matEditor.ShaderProperty(_helper.GetProperty("_AdditiveToPreMultiplyAlphaLerp"),"叠加到预乘混合");
+                                }
+                            }
+                            
+                        });
                     }
                 }
                 else
@@ -325,11 +360,9 @@ namespace UnityEditor
                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMainTex,4,"主贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MAINTEX,0,textureProp:textureProp);
                 }
 
-                if (_uiEffectEnabled==0||_uiParticleEnabled==1)
-                {
-                    DrawCustomDataSelect("主贴图X轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0);
-                    DrawCustomDataSelect("主贴图Y轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0);
-                }
+                DrawCustomDataSelect("主贴图X轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0);
+                DrawCustomDataSelect("主贴图Y轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0);
+                
                 if (_meshSourceMode != MeshSourceMode.UIEffectSprite)
                 {
 
@@ -372,7 +405,7 @@ namespace UnityEditor
                     });
             };
 
-            if (_uiEffectEnabled==0 || _uiParticleEnabled==1 || _meshSourceMode == MeshSourceMode.UIEffectBaseMap)
+            if (_useGraphicMainTex <=0)
             {
                 _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBaseMap,3,GetAnimBoolIndex(3),"主贴图","_BaseMap","_BaseColor",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP,flagIndex:2,drawBlock:
                     theBaseMap =>
@@ -948,32 +981,7 @@ namespace UnityEditor
                         }
                     });
             }
-
-            if (_uiEffectEnabled == 0||_uiParticleEnabled == 1)
-            {
-
-                for (int i = 0; i < mats.Count; i++)
-                {
-                    if (shaderFlags[i].IsCustomData1On())
-                    {
-                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1_ON);
-                    }
-                    else
-                    {
-                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1_ON);
-                    }
-
-                    if (shaderFlags[i].IsCustomData2On())
-                    {
-                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2_ON);
-                    }
-                    else
-                    {
-                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2_ON);
-                    }
-                }
-
-            }
+            
             
             _helper.DrawRenderQueue(_helper.GetProperty("_QueueBias"));
            
@@ -1141,65 +1149,88 @@ namespace UnityEditor
         
         void DoAfterDraw()
         {
+            // Debug.Log(mats[0].name + " MaterialEditorDoAfterDraw!");
             for (int i = 0; i < mats.Count; i++)
             {
-                if (_meshSourceMode != MeshSourceMode.UnKnowOrMixed)
+               
+                switch (_meshSourceMode)
                 {
-                    switch (_meshSourceMode)
-                    {
-                        case MeshSourceMode.Particle:
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM, index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
-                                index: 1);
+                    case MeshSourceMode.Particle:
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM, index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
+                            index: 1);
 
-                            //如果是粒子系统，则不需要走AnimationSheetHelper
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_ANIMATION_SHEET_HELPER);
-                            break;
-                        case MeshSourceMode.Mesh:
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
-                                index: 1);
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
-                                index: 1);
-                            break;
-                        case MeshSourceMode.UIEffectRawImage:
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
-                                index: 1);
-                            break;
-                        case MeshSourceMode.UIEffectSprite:
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
-                                index: 1);
-                            break;
-                        case MeshSourceMode.UIEffectBaseMap:
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
-                                index: 1);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
-                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
-                                index: 1);
-                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
-                                index: 1);
-                            break;
+                        //如果是粒子系统，则不需要走AnimationSheetHelper
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_ANIMATION_SHEET_HELPER);
+                        break;
+                    case MeshSourceMode.Mesh:
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
+                            index: 1);
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
+                            index: 1);
+                        break;
+                    case MeshSourceMode.UIEffectRawImage:
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
+                            index: 1);
+                        break;
+                    case MeshSourceMode.UIEffectSprite:
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
+                            index: 1);
+                        break;
+                    case MeshSourceMode.UIEffectBaseMap:
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_IS_PARTICLE_SYSTEM,
+                            index: 1);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UV_FROM_MESH, index: 1);
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UIEFFECT_ON, index: 0);
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE,
+                            index: 1);
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE,
+                            index: 1);
+                        break;
+                }
+            
+                
+                if (_meshSourceModeIsParticle > 0.5f)
+                {
+
+                    if (shaderFlags[i].IsCustomData1On())
+                    {
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1_ON);
                     }
+                    else
+                    {
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA1_ON);
+                    }
+
+                    if (shaderFlags[i].IsCustomData2On())
+                    {
+                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2_ON);
+                    }
+                    else
+                    {
+                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_CUSTOMDATA2_ON);
+                    }
+
                 }
                 
                 switch (_fxLightMode)
@@ -1248,7 +1279,7 @@ namespace UnityEditor
 
                 TransparentMode transparentMode = (TransparentMode)mats[i].GetFloat("_TransparentMode");
                 int queueBias = (int)mats[i].GetFloat("_QueueBias");
-                switch (_transparentMode)
+                switch (transparentMode)
                 {
                     case TransparentMode.Opaque:
                         mats[i].SetInt("_ZWrite", (int)1);
@@ -1266,7 +1297,7 @@ namespace UnityEditor
                         }
 
                         int defaultQueue = 3100;
-                        if (_uiEffectEnabled == 1||_uiParticleEnabled ==1)
+                        if (_uiEffectEnabled == 1)
                         {
                             defaultQueue = 3000;
                         }
@@ -1306,27 +1337,31 @@ namespace UnityEditor
                     case BlendMode.Alpha:
                         mats[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                         mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                        // mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].DisableKeyword("_ALPHAMODULATE_ON");
                         break;
                     case BlendMode.Premultiply:
                         mats[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                         mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                        // mat.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].DisableKeyword("_ALPHAMODULATE_ON");
                         break;
                     case BlendMode.Additive:
-                        mats[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                        mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                        //  mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                        mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        mats[i].EnableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].DisableKeyword("_ALPHAMODULATE_ON");
                         break;
                     case BlendMode.Multiply:
                         mats[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
-                        mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                        // mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                        // mat.EnableKeyword("_ALPHAMODULATE_ON");
+                        mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        mats[i].DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        mats[i].EnableKeyword("_ALPHAMODULATE_ON");
                         break;
                     case BlendMode.Opaque:
                         mats[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                         mats[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                        mats[i].DisableKeyword("_ALPHAPREMULTIPLY_ON");
                         break;
                 }
 
@@ -1675,7 +1710,7 @@ namespace UnityEditor
             // if(!_isUseParticleSystem)return;//只有粒子系统才会处理相关内容。
             // if (mats.Count != 1) return; //仅单选触发
             
-            if(!(_meshSourceMode == MeshSourceMode.Particle || _uiParticleEnabled == 1) ) return;
+            if(_meshSourceModeIsParticle <=0 ) return;
             //-------------这里需要处理多选情况--------------
             EditorGUI.showMixedValue = CustomDataHasMixedValue(dataBitPos, dataIndex);
             W9ParticleShaderFlags.CutomDataComponent component = shaderFlags[0].GetCustomDataFlag(dataBitPos, dataIndex);

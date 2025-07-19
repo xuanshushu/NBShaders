@@ -799,7 +799,15 @@
 
         alpha *= _AlphaAll;
 
+        #if defined  (_ALPHAPREMULTIPLY_ON) || defined(_ALPHAMODULATE_ON)
+            result *= alpha;
+            #ifdef _ALPHAPREMULTIPLY_ON
+                alpha *= _AdditiveToPreMultiplyAlphaLerp;
+            #endif
+        #endif
         half4 color = half4(result, alpha);
+
+        
 
         #ifdef _ALPHATEST_ON
         clip(color.a - _Cutoff);

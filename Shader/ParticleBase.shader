@@ -206,6 +206,7 @@
         _fogintensity ("雾影响强度", Range(0, 1)) = 1
         // -------------------------------------
         // Hidden properties - Generic  通用的隐藏属性
+    	_AdditiveToPreMultiplyAlphaLerp("相加到预乘混合",Range(0,1)) = 0.0
         [HideInInspector] _Blend ("__mode-ignore", Float) = 0.0
         [HideInInspector] _AlphaClip ("__clip-ignore", Float) = 0.0
         [HideInInspector] _SrcBlend ("__src-ignore", Float) = 1.0
@@ -390,7 +391,7 @@
             
             // -------------------------------------
             // Particle Keywords
-            //#pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
+            #pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
             #pragma shader_feature_local _ALPHATEST_ON
             //#pragma shader_feature_local _ _COLOROVERLAY_ON _COLORCOLOR_ON _COLORADDSUBDIFF_ON  //粒子颜色和材质颜色的混合运算  暂时先不要了
             #pragma shader_feature_local _FLIPBOOKBLENDING_ON
@@ -497,7 +498,7 @@
             #pragma multi_compile _ SOFT_UI_FRAME EVALUATE_SH_MIXED EVALUATE_SH_VERTEX//用于UI软蒙版
             // -------------------------------------
             // Particle Keywords
-            //#pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
+            #pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
             #pragma shader_feature_local _ALPHATEST_ON
             //#pragma shader_feature_local _ _COLOROVERLAY_ON _COLORCOLOR_ON _COLORADDSUBDIFF_ON  //粒子颜色和材质颜色的混合运算  暂时先不要了
             #pragma shader_feature_local _FLIPBOOKBLENDING_ON

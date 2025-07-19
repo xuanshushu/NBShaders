@@ -12,6 +12,7 @@
         float _IntersectRadius;
         half4 _IntersectColor;
     // #endif
+    half _AdditiveToPreMultiplyAlphaLerp;
     half _Saturability;
     half _HueShift;
     half _Contrast;
