@@ -1420,13 +1420,13 @@ namespace UnityEditor
         {
             checkIsParicleSystem = false;
             m_RenderersUsingThisMaterial.Clear();
-            #if UNITY_2022_1_OR_NEWER
+            // #if UNITY_2022_1_OR_NEWER
+            // ParticleSystemRenderer[] renderers =
+            //     UnityEngine.Object.FindObjectsByType(typeof(ParticleSystemRenderer),FindObjectsSortMode.None) as ParticleSystemRenderer[];
+            // #else
             ParticleSystemRenderer[] renderers =
-                UnityEngine.Object.FindObjectsByType(typeof(ParticleSystemRenderer),FindObjectsSortMode.None) as ParticleSystemRenderer[];
-            #else
-            ParticleSystemRenderer[] renderers =
-                UnityEngine.Object.FindObjectsOfType(typeof(ParticleSystemRenderer)) as ParticleSystemRenderer[];
-            #endif
+                UnityEngine.Object.FindObjectsOfType(typeof(ParticleSystemRenderer)) as ParticleSystemRenderer[];//为了兼容性使用较慢版本
+            // #endif
             foreach (ParticleSystemRenderer renderer in renderers)
             {
                 if (renderer.sharedMaterial == material || renderer.trailMaterial == material)
