@@ -249,4 +249,109 @@ half4 UniversalFragmentSixWay(InputData inputData,BSDFData bsdfData)
 
     return CalculateFinalColor(lightingData, bsdfData.alpha);
 }
+half3 LightingHalfLambert(half3 lightColor, half3 lightDir, half3 normal)
+{
+    half NdotL = saturate(dot(normal, lightDir));
+    NdotL = NdotL*0.5 + 0.5;
+    return lightColor * NdotL;
+}
+half3 CalculateHalfLambertBlinnPhong(Light light, InputData inputData, SurfaceData surfaceData)
+{
+    half3 attenuatedLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
+    half3 lightDiffuseColor = LightingHalfLambert(attenuatedLightColor, light.direction, inputData.normalWS);
+
+    half3 lightSpecularColor = half3(0,0,0);
+    #if defined(_SPECGLOSSMAP) || defined(_SPECULAR_COLOR)
+    half smoothness = exp2(10 * surfaceData.smoothness + 1);
+
+    lightSpecularColor += LightingSpecular(attenuatedLightColor, light.direction, inputData.normalWS, inputData.viewDirectionWS, half4(surfaceData.specular, 1), smoothness);
+    #endif
+
+    #if _ALPHAPREMULTIPLY_ON
+    return lightDiffuseColor * surfaceData.albedo * surfaceData.alpha + lightSpecularColor;
+    #else
+    return lightDiffuseColor * surfaceData.albedo + lightSpecularColor;
+    #endif
+}
+half4 UniversalFragmentHalfLambert(InputData inputData, half3 diffuse, half4 specularGloss, half smoothness, half3 emission, half alpha, half3 normalTS)
+{
+
+    SurfaceData surfaceData;
+
+    surfaceData.albedo = diffuse;
+    surfaceData.alpha = alpha;
+    surfaceData.emission = emission;
+    surfaceData.metallic = 0;
+    surfaceData.occlusion = 1;
+    surfaceData.smoothness = smoothness;
+    surfaceData.specular = specularGloss.rgb;
+    surfaceData.clearCoatMask = 0;
+    surfaceData.clearCoatSmoothness = 1;
+    surfaceData.normalTS = normalTS;
+
+    
+    // #if defined(DEBUG_DISPLAY)
+    // half4 debugColor;
+    //
+    // if (CanDebugOverrideOutputColor(inputData, surfaceData, debugColor))
+    // {
+    //     return debugColor;
+    // }
+    // #endif
+
+    #ifdef _LIGHT_LAYERS
+    uint meshRenderingLayers = GetMeshRenderingLayer();
+    #endif
+    
+    half4 shadowMask = CalculateShadowMask(inputData);
+    AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+    Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+
+    MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI, aoFactor);
+
+    inputData.bakedGI *= surfaceData.albedo;
+
+    LightingData lightingData = CreateLightingData(inputData, surfaceData);
+#ifdef _LIGHT_LAYERS
+    if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+#endif
+    {
+        lightingData.mainLightColor += CalculateHalfLambertBlinnPhong(mainLight, inputData, surfaceData);
+    }
+
+    #if defined(_ADDITIONAL_LIGHTS)
+    uint pixelLightCount = GetAdditionalLightsCount();
+
+    #if USE_FORWARD_PLUS
+    for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+    {
+        FORWARD_PLUS_SUBTRACTIVE_LIGHT_CHECK
+
+        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+#ifdef _LIGHT_LAYERS
+        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+#endif
+        {
+            lightingData.additionalLightsColor += CalculateBlinnPhong(light, inputData, surfaceData);
+        }
+    }
+    #endif
+
+    LIGHT_LOOP_BEGIN(pixelLightCount)
+        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+#ifdef _LIGHT_LAYERS
+        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+#endif
+        {
+            lightingData.additionalLightsColor += CalculateHalfLambertBlinnPhong(light, inputData, surfaceData);
+        }
+    LIGHT_LOOP_END
+    #endif
+
+    #if defined(_ADDITIONAL_LIGHTS_VERTEX)
+    lightingData.vertexLightingColor += inputData.vertexLighting * surfaceData.albedo;
+    #endif
+
+    return CalculateFinalColor(lightingData, surfaceData.alpha);
+}
 #endif

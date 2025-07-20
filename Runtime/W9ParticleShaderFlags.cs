@@ -102,7 +102,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_LINEARTOGAMMA_ON = 1 << 10;
     public const int FLAG_BIT_PARTICLE_FRESNEL_ON = 1 << 11;
     public const int FLAG_BIT_PARTICLE_NOISEMAP_NORMALIZEED_ON = 1 << 12;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA1Z_DISSOLVE_ON = 1 << 13;
+    public const int FLAG_BIT_PARTICLE_FRESNEL_COLOR_AFFETCT_BY_ALPHA = 1 << 13;
     public const int FLAG_BIT_PARTICLE_UIEFFECT_ON = 1 << 14;
     public const int FLAG_BIT_PARTICLE_UNSCALETIME_ON = 1 << 15;
     public const int FLAG_BIT_PARTICLE_SCRIPTABLETIME_ON = 1 << 16;
@@ -110,7 +110,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_FRESNEL_INVERT_ON = 1 << 18;
     public const int FLAG_BIT_HUESHIFT_ON = 1 << 19;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2_ON = 1 << 20;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA1X_MAINTEXOFFSETX = 1 << 21;
+    public const int FLAG_BIT_PARTICLE_NORMALMAP_MASK_MODE = 1 << 21;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA1Y_MAINTEXOFFSETY = 1 << 22;
  
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA1W_HUESHIFT = 1 << 23;

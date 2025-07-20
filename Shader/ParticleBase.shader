@@ -79,6 +79,7 @@
     	//--------------光照部分-------------
     	_FxLightMode("灯光模式",Float) = 0
     	_BumpMapToggle("法线贴图开关",Float) = 0
+    	_BumpMapMaskMode("法线贴图多通道模式",Float) = 0
     	_BumpScale("Scale", Float) = 1.0
         _BumpTex("Normal Map", 2D) = "bump" {}
     	_BumpTexFollowMainTexUVToggle("法线跟随主贴图UV",Float) = 0
@@ -232,8 +233,9 @@
         _DepthOutline_Toggle("深度描边",Float) = 0
         [HDR]_DepthOutline_Color("深度描边颜色_hdr",Color) = (1,1,1,1)
         _DepthOutline_Vec("菲涅尔深度描边参数",Vector) = (0,0.5,0,0)
+    	_FresnelColorAffectByAlpha("菲涅尔颜色受Alpha影响",Float) = 1
 //        _DepthOutline_withoutFresnel_Toggle("深度描边关闭菲涅尔",Float) = 0
-//        _FresnelUnit2("菲涅尔通用2", Vector) = (0,1,0,0)
+//        _FresnelUnit2("菲涅尔通用2", Vector) = (1,1,0,0)
         
         _DepthDecal_Toggle("深度贴花",Float) = 0
         
@@ -316,7 +318,7 @@
     }
     SubShader
     {
-        Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" "PreviewType"="Plane" "CanUseSpriteAtlas"="True" }
+        Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" "PreviewType"="Sphere" "CanUseSpriteAtlas"="True" }
         
         Stencil
         {
@@ -412,7 +414,7 @@
             #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
 
             //LIGHTING
-			#pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
+			#pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_HALF_LAMBERT _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY 
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
             #pragma shader_feature_local _ _SPECULAR_COLOR
@@ -519,7 +521,7 @@
             #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
 
             //LIGHTING
-            #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY
+			#pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_HALF_LAMBERT _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY 
             #pragma shader_feature_local _ _NORMALMAP
             #pragma shader_feature_local _ _MATCAP
             #pragma shader_feature_local _ _SPECULAR_COLOR

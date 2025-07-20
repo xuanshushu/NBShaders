@@ -435,11 +435,11 @@ namespace UnityEditor
                 if (!mode.hasMixedValue)
                 {
                      _fxLightMode = (FxLightMode)mode.floatValue;
-                    if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.PBR)
+                    if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.PBR || _fxLightMode == FxLightMode.HalfLambert)
                     {
-                        if (_fxLightMode == FxLightMode.BlinnPhong)
+                        if (_fxLightMode == FxLightMode.BlinnPhong ||_fxLightMode == FxLightMode.HalfLambert)
                         {
-                            _helper.DrawToggle("BlinnPhong高光开关","_BlinnPhongSpecularToggle",shaderKeyword:"_SPECULAR_COLOR",drawBlock:
+                            _helper.DrawToggle("高光开关","_BlinnPhongSpecularToggle",shaderKeyword:"_SPECULAR_COLOR",drawBlock:
                                 isToggle =>
                                 {
                                     if (!isToggle.hasMixedValue && isToggle.floatValue > 0.5f)
@@ -499,6 +499,7 @@ namespace UnityEditor
 
             if ( _fxLightMode != FxLightMode.SixWay)
             {
+                //--------------法线-----------------
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2BumpTexToggle,5,GetAnimBoolIndex(5),"法线贴图开关","_BumpMapToggle",shaderKeyword:"_NORMALMAP",drawBlock: isBumpMapToggle =>
                 {
                     bool bumpMapFromMainTexUV = _helper.GetProperty("_BumpTexFollowMainTexUVToggle").floatValue > 0.5;
@@ -510,12 +511,12 @@ namespace UnityEditor
                                 DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeBumpTex,4,"法线贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_BUMPMAP,0,theBumpmap);
                             }
                             //在DoAfterDraw会执行SetKeyword的逻辑。
+                            _helper.DrawToggle("法线贴图多通道模式","_BumpMapMaskMode",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_NORMALMAP_MASK_MODE);
+                            _helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
+                            _helper.DrawSlider("法线强度","_BumpScale",-5f,5f); 
                         });
-                    _helper.DrawToggle("法线跟随主贴图UV","_BumpTexFollowMainTexUVToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX,1);
-                    _helper.DrawSlider("法线强度","_BumpScale",-5f,5f); 
                     
                 });
-                //--------------法线-----------------
                 
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2MatCapToggle,5,GetAnimBoolIndex(5),"MatCap模拟材质","_MatCapToggle",shaderKeyword:"_MATCAP",drawBlock: isMatCapToggle =>
                 {
@@ -661,11 +662,11 @@ namespace UnityEditor
             
             _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutDissolve,3,GetAnimBoolIndex(3),"溶解","_Dissolve_Toggle",shaderKeyword:"_DISSOLVE",isIndentBlock:true,fontStyle:FontStyle.Bold,
             drawBlock:(isToggle) =>{
-                _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutDissolveMap,3,GetAnimBoolIndex(3),"溶解贴图","_DissolveMap",drawScaleOffset:false,drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_MAP,flagIndex:2,
+                _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutDissolveMap,3,GetAnimBoolIndex(3),"溶解贴图","_DissolveMap",drawScaleOffset:true,drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_MAP,flagIndex:2,
                 drawBlock:(dissolveTex)=>
                 {
                     DrawColorChannelSelect("溶解贴图通道选择",W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_DISSOLVE_MAP);
-                    matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_DissolveMap"));
+                    // matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_DissolveMap"));
                     DrawCustomDataSelect("溶解贴图X轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_X,1);
                     DrawCustomDataSelect("溶解贴图Y轴偏移自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_OFFSET_Y,1);
                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeDissolveMap,4,"溶解贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_DISSOLVE_MAP,0,dissolveTex);
@@ -738,30 +739,47 @@ namespace UnityEditor
             
             _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutFresnel,3,GetAnimBoolIndex(3),"菲涅尔","_fresnelEnabled",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_ON,isIndentBlock:true,fontStyle:FontStyle.Bold,
             drawBlock: (isToggle) => {
-                _helper.DrawPopUp("菲涅尔模式","_FresnelMode",Enum.GetNames(typeof(FresnelMode)));
+                _helper.DrawPopUp("菲涅尔模式","_FresnelMode",_fresnelModeNames,drawBlock:
+                    fresnelModeProp => {
+                        if ((!fresnelModeProp.hasMixedValue) && fresnelModeProp.floatValue.Equals((float)FresnelMode.Color))
+                        {
+                            matEditor.ColorProperty(_helper.GetProperty("_FresnelColor"), "菲涅尔颜色");
+                            _helper.DrawToggle("菲涅尔颜色受Alpha影响","_FresnelColorAffectByAlpha",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_AFFETCT_BY_ALPHA);
+                        }
+                    },
+                    drawOnValueChangedBlock: fresnelModeProp => {
+                        if (!fresnelModeProp.hasMixedValue)
+                        {
+                            FresnelMode fresnelMode = (FresnelMode)fresnelModeProp.floatValue;
+                            for (int i = 0; i < shaderFlags.Count; i++)
+                            {
+                                switch (fresnelMode)
+                                {
+                                    case FresnelMode.Color:
+                                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
+                                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
+                                        break;
+                                    case FresnelMode.Fade:
+                                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
+                                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
+                                        break;
+                                }
+                            }
+                            
+                        }
+                    });
                 _helper.DrawVector4Component("菲涅尔强度","_FresnelUnit","z",true);
+                
 
                 if (mats.Count == 1)
                 {
                     FresnelMode fresnelMode = (FresnelMode)mats[0].GetFloat("_FresnelMode");
-                    switch (fresnelMode)
-                    {
-                        case FresnelMode.Color:
-                            matEditor.ColorProperty(_helper.GetProperty("_FresnelColor"), "菲涅尔颜色");
-                            shaderFlags[0].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
-                            shaderFlags[0].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
-                            shaderFlags[0].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
-                            break;
-                        case FresnelMode.Fade:
-                            shaderFlags[0].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
-                            shaderFlags[0].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
-                            break;
-                    }
+                    
                 }
 
                 _helper.DrawVector4Component("菲涅尔位置","_FresnelUnit","x",true,-1f,1f);
                 DrawCustomDataSelect("菲尼尔位置自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0);
-                _helper.DrawVector4Component("菲涅尔范围","_FresnelUnit","y",true,0f,10f);
+                _helper.DrawVector4Component("菲涅尔范围Pow","_FresnelUnit","y",true,0f,10f);
                 _helper.DrawVector4Component("菲涅尔硬度","_FresnelUnit","w",true,0f,1f);
                 _helper.DrawToggle("翻转菲涅尔","_InvertFresnel_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_INVERT_ON);
                 matEditor.VectorProperty(_helper.GetProperty("_FresnelRotation"),"菲涅尔方向偏移");
@@ -1107,13 +1125,22 @@ namespace UnityEditor
         public enum FresnelMode
         {
             Color = 0,
-            Fade = 1
+            Fade = 1,
+            UnkownOrMixed = -1
         }
+
+        private string[] _fresnelModeNames =
+        {
+            "颜色|边缘光",
+            "半透明|渐隐"
+        };
+        
         
         public enum FxLightMode
         {
             UnLit,
             BlinnPhong,
+            HalfLambert,
             PBR,
             SixWay,
             UnKnownOrMixedValue = -1
@@ -1122,6 +1149,7 @@ namespace UnityEditor
         {
             "默认无光(Unlit)",
             "简单光照(BlinnPhong)",
+            "简单光照通透(HalfLambert)",
             "高级光照(PBR)",
             "六路光照(SixWay)"
         };
@@ -1238,6 +1266,7 @@ namespace UnityEditor
                     case FxLightMode.UnLit:
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_HALF_LAMBERT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
                         mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
@@ -1245,13 +1274,24 @@ namespace UnityEditor
                     case FxLightMode.BlinnPhong:
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_HALF_LAMBERT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
                         mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
                         break;
+                    case FxLightMode.HalfLambert:
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].EnableKeyword("_FX_LIGHT_MODE_HALF_LAMBERT");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
+                        mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
+                        break;
+                        
                     case FxLightMode.PBR:
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_HALF_LAMBERT");
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_SIX_WAY");
                         mats[i].DisableKeyword("EVALUATE_SH_VERTEX");
@@ -1259,6 +1299,7 @@ namespace UnityEditor
                     case FxLightMode.SixWay:
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_UNLIT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_BLINN_PHONG");
+                        mats[i].DisableKeyword("_FX_LIGHT_MODE_HALF_LAMBERT");
                         mats[i].DisableKeyword("_FX_LIGHT_MODE_PBR");
                         mats[i].EnableKeyword("_FX_LIGHT_MODE_SIX_WAY");
                         mats[i].EnableKeyword("EVALUATE_SH_VERTEX");//强制六面体使用顶点SH。

@@ -438,10 +438,21 @@
             BumpTex_uv = uv;
         }
 
+        half metallic = 1;
+        half smoothness = 1;
         #ifdef _NORMALMAP
         
         half4 normalMapSample = SampleTexture2DWithWrapFlags(_BumpTex,BumpTex_uv,FLAG_BIT_WRAPMODE_BUMPTEX);
-        normalTS = UnpackNormalRGB(half4(normalMapSample.xy,1,0),_BumpScale);
+        if (CheckLocalFlags(FLAG_BIT_PARTICLE_NORMALMAP_MASK_MODE))
+        {
+            normalTS = UnpackNormalRGB(half4(normalMapSample.xy,0,1),_BumpScale);
+            metallic *= normalMapSample.z;
+            smoothness *= normalMapSample.w;
+        }
+        else
+        {
+            normalTS = UnpackNormalScale(half4(normalMapSample),_BumpScale);
+        }
 
         #endif
         //光照模式
@@ -449,15 +460,19 @@
     
             InputData inputData;
             InitializeInputData(input, normalTS, inputData);
-            half metallic = _MaterialInfo.x;
+            metallic *= _MaterialInfo.x;
             half3 specular = 0;
-            half smoothness = _MaterialInfo.y;
+            smoothness *= _MaterialInfo.y;
             half occlusion = 1;
             half3 pbrEmission = 0;
            // return half4(inputData.bakedGI,1);
-            #ifdef _FX_LIGHT_MODE_BLINN_PHONG
+            #if defined (_FX_LIGHT_MODE_BLINN_PHONG) || defined(_FX_LIGHT_MODE_HALF_LAMBERT) 
             half4 specularGloss = _SpecularColor;
+            #ifdef _FX_LIGHT_MODE_BLINN_PHONG
             half4 blinnPhong = UniversalFragmentBlinnPhong(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
+            #else //_FX_LIGHT_MODE_HALF_LAMBERT
+            half4 blinnPhong = UniversalFragmentHalfLambert(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
+            #endif
             result = blinnPhong.rgb;
             alpha = blinnPhong.a;
             #elif _FX_LIGHT_MODE_PBR
@@ -651,7 +666,8 @@
            
                     _FresnelUnit.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_FRESNEL_OFFSET,0,input.VaryingsP_Custom1,input.VaryingsP_Custom2);;
                             
-                    fresnelValue = NB_Remap(fresnelValue,_FresnelUnit.x,1,0,1);
+                    // half fresnelHardness =  - _FresnelUnit.w*0.5 +0.5;
+                    fresnelValue = NB_Remap(fresnelValue,_FresnelUnit.x,_FresnelUnit.x + 1.01 - _FresnelUnit.w,0,1);
                     UNITY_BRANCH
                     if(!CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_INVERT_ON))
                     {
@@ -659,9 +675,8 @@
                     }
                     fresnelValue = pow(fresnelValue,_FresnelUnit.y);
 
-                    half fresnelHardness = (1 - _FresnelUnit.w)*0.5;
                     
-                    fresnelValue = smoothstep(0.5-fresnelHardness,0.5+fresnelHardness,fresnelValue);
+                    // fresnelValue = smoothstep(0.5-fresnelHardness,0.5+fresnelHardness,fresnelValue);
                 }
 
                 UNITY_BRANCH
@@ -670,7 +685,10 @@
                     float fresnelColorIntensity = fresnelValue*_FresnelColor.a*_FresnelUnit.z;
                     
                     result = lerp(result,_FresnelColor.rgb,fresnelColorIntensity);
-                    alpha = max(alpha,fresnelColorIntensity);//颜色要不要不被主贴图Alpha影响呢？
+                    if (!CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_COLOR_AFFETCT_BY_ALPHA))
+                    {
+                        alpha = max(alpha,fresnelColorIntensity);//颜色要不要不被主贴图Alpha影响呢？
+                    }
                 }
 
                 UNITY_BRANCH
