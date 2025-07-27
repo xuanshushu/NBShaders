@@ -137,9 +137,10 @@
            
             output.texcoordMaskMap2.xy = particleUVs.maskMap2UV;
             output.texcoordMaskMap2.zw = particleUVs.maskMap3UV;
-            #ifdef _NORMALMAP
-                output.bumpTexTexcoord.xy = particleUVs.bumpTexUV;
-
+            #if defined (_NORMALMAP) || defined(_COLOR_RAMP)
+                output.bumpTexAndColorRampMapTexcoord.xy = particleUVs.bumpTexUV;
+                output.bumpTexAndColorRampMapTexcoord.zw = particleUVs.colorRampMapUV;
+            
             #endif
             
             #if defined (_EMISSION)   || defined(_COLORMAPBLEND)
@@ -258,6 +259,7 @@
         float2 dissolve_mask_uv;
         float4 dissolve_noise_uv;
         float2 BumpTex_uv;
+        float2 colorRamp_uv;
 
         //如果同时在粒子系统里开启序列帧融帧和特殊UV通道模式。
         
@@ -286,7 +288,7 @@
             noiseMaskMap_uv = particleUVs.noiseMaskMapUV;
             dissolve_noise_uv = float4(particleUVs.dissolve_noise1_UV,particleUVs.dissolve_noise2_UV);
             BumpTex_uv = particleUVs.bumpTexUV;
-            
+            colorRamp_uv = particleUVs.colorRampMapUV;
         }
         else
         {
@@ -294,8 +296,9 @@
             MaskMapuv2 = input.texcoordMaskMap2.xy;
             MaskMapuv3 = input.texcoordMaskMap2.zw;
             
-            #ifdef _NORMALMAP
-            BumpTex_uv = input.bumpTexTexcoord.xy;
+            #if defined (_NORMALMAP)||defined(_COLOR_RAMP)
+            BumpTex_uv = input.bumpTexAndColorRampMapTexcoord.xy;
+            colorRamp_uv = input.bumpTexAndColorRampMapTexcoord.zw;
             #endif
             
             #ifdef _NOISEMAP
@@ -564,6 +567,55 @@
         #endif
         
         result += emission;
+
+
+        #if defined(_COLOR_RAMP)
+            half rampValue = 0;
+            if (CheckLocalFlags(FLAG_BIT_PARTICLE_RAMP_COLOR_MAP_MODE_ON))
+            {
+                half4 RampColorSample = SampleTexture2DWithWrapFlags(_RampColorMap,colorRamp_uv,FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP);
+                rampValue = GetColorChannel(RampColorSample,FLAG_BIT_COLOR_CHANNEL_POS_0_RAMP_COLOR_MAP);
+            }
+            else
+            {
+                const int rampColorWrapMode = CheckLocalWrapFlags(FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP);
+                if (rampColorWrapMode == 0 || rampColorWrapMode == 2)
+                {
+                    rampValue = frac(colorRamp_uv.x);
+                }
+                else
+                {
+                    rampValue = saturate(colorRamp_uv.x);
+                }
+            }
+
+            half3 colorRampColorArr[] = {_RampColor0.rgb,_RampColor1.rgb,_RampColor2.rgb,_RampColor3.rgb,_RampColor4.rgb,_RampColor5.rgb};
+            half colorRampColorTimeArr[] = {_RampColor0.a,_RampColor1.a,_RampColor2.a,_RampColor3.a,_RampColor4.a,_RampColor5.a};
+            int colorRampColorCount = _RampColorCount & 0xFFFF;
+
+            half colorRampAlphaArr[] = {_RampColorAlpha0.x,_RampColorAlpha0.z,_RampColorAlpha1.x,_RampColorAlpha1.z,_RampColorAlpha2.x,_RampColorAlpha2.z};
+            half colorRampAlphaTimeArr[] = {_RampColorAlpha0.y,_RampColorAlpha0.w,_RampColorAlpha1.y,_RampColorAlpha1.w,_RampColorAlpha2.y,_RampColorAlpha2.w};
+            int colorRampAlphaCount = _RampColorCount >> 16;
+
+            half4 rampColor;
+            rampColor.rgb = GetGradientColorValue(colorRampColorArr,colorRampColorTimeArr,colorRampColorCount,rampValue);
+            rampColor.a = GetGradientAlphaValue(colorRampAlphaArr,colorRampAlphaTimeArr,colorRampAlphaCount,rampValue);
+
+            rampColor *= _RampColorBlendColor;
+        
+            if (CheckLocalFlags(FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_MULTIPLY))
+            {
+                result *= rampColor;
+                alpha *= rampColor.a;
+            }
+            else
+            {
+                result += rampColor;
+                alpha += rampColor.a;
+            }
+        #endif
+        
+        
 
         //溶解部分
         #if defined(_DISSOLVE)

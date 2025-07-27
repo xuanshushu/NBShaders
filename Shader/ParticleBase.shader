@@ -167,6 +167,30 @@
         _uvRapSoft ("LiuuvRapSoft-ignore", Range(0, 1)) = 0
         [HDR]_EmissionMapColor ("流光贴图颜色_hdr", Color) = (1, 1, 1, 1)
         _EmissionMapColorIntensity("流光颜色强度", float) = 1
+    	
+    	//颜色渐变贴图--------
+        _ColorBlendMap("颜色渐变贴图 xy:UV缩放 zw:UV偏移",2D) = "white"{}
+        [HDR]_ColorBlendColor("颜色渐变叠加_hdr",Color) = (1,1,1,1)
+        _ColorBlendMapOffset("xy:颜色渐变贴图偏移动画,w:旋转",Vector) = (0,0,0,0)
+    	
+    	//颜色映射Ramp
+    	_RampColorToggle("颜色映射开关",Float) = 0
+    	_RampColorSourceMode("Ramp来源模式",Float) = 0
+    	_RampColorBlendMode("Ramp颜色混合模式",Float) = 0
+    	_RampColorMap("颜色映射黑白图",2D) = "white"{}
+    	_RampColor0("rgb:RampColor0,a:pos",Color) = (1,1,1,0)
+    	_RampColor1("rgb:RampColor1,a:pos",Color) = (1,1,1,1)
+    	_RampColor2("rgb:RampColor2,a:pos",Color) = (1,1,1,1)
+    	_RampColor3("rgb:RampColor3,a:pos",Color) = (1,1,1,1)
+    	_RampColor4("rgb:RampColor4,a:pos",Color) = (1,1,1,1)
+    	_RampColor5("rgb:RampColor5,a:pos",Color) = (1,1,1,1)
+    	_RampColorAlpha0("x:RampColorAlpha0,y:Pos0,z:RampColorAlpha1,w:Pos1",Vector) = (1,0,1,1)
+    	_RampColorAlpha1("x:RampColorAlpha2,y:Pos2,z:RampColorAlpha3,w:Pos3",Vector) = (1,0,1,1)
+    	_RampColorAlpha2("x:RampColorAlpha4,y:Pos4,z:RampColorAlpha5,w:Pos5",Vector) = (1,0,1,1)
+    	_RampColorCount("颜色映射数量",Integer) = 2
+    	[HDR]_RampColorBlendColor("颜色映射叠加颜色_hdr",Color) = (1,1,1,1)
+	    _RampColorMapOffset("xy:颜色映射贴图偏移动画,w:旋转",Vector) = (0,0,0,0)
+
         
         // Rongjie ------------------
         // [Header(RongJie(Anima For CustomData.y).......)]
@@ -183,11 +207,10 @@
         _Dissolve_Vec2("溶解丝滑度（溶解值黑白调整）黑色X,白色Y",Vector) = (0,1,0,0)
         _DissolveRampMap("溶解Ramp图",2D) = "white"{}
         [HDR]_DissolveRampColor("溶解Ramp颜色_hdr",Color) = (1,1,1,1)
+    	
+
         
-        //颜色渐变贴图--------
-        _ColorBlendMap("颜色渐变贴图 xy:UV缩放 zw:UV偏移",2D) = "white"{}
-        [HDR]_ColorBlendColor("颜色渐变叠加_hdr",Color) = (1,1,1,1)
-        _ColorBlendMapOffset("xy:颜色渐变贴图偏移动画",Vector) = (0,0,0,0)
+ 
 
         _CustomData1X ("ignore", float) = 0
         _CustomData1Y ("ignore", float) = 0
@@ -360,7 +383,7 @@
             #pragma exclude_renderers d3d11_9x
             #pragma exclude_renderers d3d9
             
-            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
             
             // -------------------------------------
             // Material Keywords
@@ -377,6 +400,7 @@
             //后续Test类的关键字要找机会排除
             #pragma shader_feature_local _DISSOLVE_EDITOR_TEST
             #pragma  shader_feature_local  _COLORMAPBLEND//颜色渐变
+            #pragma  shader_feature_local  _COLOR_RAMP//颜色映射
 
             //将光照和UI混用，达到节省Keywords的目的。
             #pragma multi_compile _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS//UI 2D遮罩
@@ -470,7 +494,7 @@
             // -------------------------------------
             // Material Keywords
  
-            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
             
             #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
             #pragma shader_feature_local _ _MASKMAP_ON
@@ -485,6 +509,9 @@
                         //后续Test类的关键字要找机会排除
             #pragma shader_feature_local _DISSOLVE_EDITOR_TEST
             #pragma shader_feature_local  _COLORMAPBLEND//颜色渐变
+            #pragma  shader_feature_local  _COLOR_RAMP//颜色映射
+            
+            
             
             #pragma multi_compile_local _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS //UI 2D遮罩
             // #pragma shader_feature_local _ _CH_XIANXING _CH_JINGXIANG  _CH_SELF   //线性擦除  径向擦除  mask擦除

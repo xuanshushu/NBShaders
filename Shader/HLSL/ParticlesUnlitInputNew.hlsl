@@ -120,8 +120,23 @@
     half4 _Dissolve_Vec2;
 
     half4 _ColorBlendMap_ST;
-    half2 _ColorBlendMapOffset;
+    float4 _ColorBlendMapOffset;
     half4 _ColorBlendColor;
+
+    half4 _RampColor0;
+    half4 _RampColor1;
+    half4 _RampColor2;
+    half4 _RampColor3;
+    half4 _RampColor4;
+    half4 _RampColor5;
+    half4 _RampColorAlpha0;
+    half4 _RampColorAlpha1;
+    half4 _RampColorAlpha2;
+    uint _RampColorCount;
+    half4 _RampColorBlendColor;
+    float4 _RampColorMapOffset;
+    half4 _RampColorMap_ST;
+
 
     half3  _VertexOffset_Vec;
     half3 _VertexOffset_CustomDir;
@@ -327,6 +342,10 @@ Texture2D _MatCapTex;
 
     # ifdef  _COLORMAPBLEND
         Texture2D _ColorBlendMap;
+    #endif
+
+    #ifdef _COLOR_RAMP
+        Texture2D _RampColorMap;
     #endif
 
     
@@ -606,6 +625,7 @@ Texture2D _MatCapTex;
         float2 noiseMapUV;
         float2 noiseMaskMapUV;
         float2 bumpTexUV;
+        float2 colorRampMapUV;
     };
 
     BaseUVs ProcessBaseUVs(float4 meshTexcoord0, float2 specialUVInTexcoord3,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,float3 postionOS)
@@ -810,9 +830,12 @@ Texture2D _MatCapTex;
         
         #ifdef _COLORMAPBLEND
             float2 colorBlendUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP,baseUVs);
-            particleUVs.colorBlendUV = ParticleUVCommonProcess(colorBlendUV,_ColorBlendMap_ST,_ColorBlendMapOffset.xy);
+            particleUVs.colorBlendUV = ParticleUVCommonProcess(colorBlendUV,_ColorBlendMap_ST,_ColorBlendMapOffset.xy,_ColorBlendMapOffset.w);
         #endif
-
+        #ifdef _COLOR_RAMP
+            float2 colorRampMapUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_RAMP_COLOR_MAP,baseUVs);
+            particleUVs.colorRampMapUV = ParticleUVCommonProcess(colorRampMapUV,_RampColorMap_ST,_RampColorMapOffset.xy,_RampColorMapOffset.w);
+        #endif
            half cum_noise = 0;
 
         //TODO
@@ -831,6 +854,9 @@ Texture2D _MatCapTex;
                
             }
         #endif
+
+   
+        
     }
 
     Texture2D _VertexOffset_Map;
@@ -1115,8 +1141,8 @@ Texture2D _MatCapTex;
         #if defined(_NORMALMAP) || defined(_FX_LIGHT_MODE_SIX_WAY)
             half4 tangentWS : TEXCOOR19;
         #endif
-        #ifdef _NORMALMAP
-            float4 bumpTexTexcoord : TEXCOOR20;
+        #if defined (_NORMALMAP) || defined(_COLOR_RAMP) 
+            float4 bumpTexAndColorRampMapTexcoord : TEXCOOR20;
         #endif
 
         #ifdef _FX_LIGHT_MODE_SIX_WAY
@@ -1127,10 +1153,6 @@ Texture2D _MatCapTex;
             half3 backBakeDiffuseLighting1 :TEXCOOR25;
             half3 backBakeDiffuseLighting2 :TEXCOOR26;
         #endif
-        
-        
-        
-        
         
         UNITY_VERTEX_INPUT_INSTANCE_ID
         UNITY_VERTEX_OUTPUT_STEREO
@@ -1217,6 +1239,55 @@ Texture2D _MatCapTex;
 #endif
 
 
+    int2 GetGradientIndex(half timeArr[6], int arrCount, half gradientTime)
+    {
+        
+        // 边界情况处理
+        if (gradientTime < timeArr[0]) {
+            return int2(-1, 0); // 小于最小值
+        }
+        if (gradientTime >= timeArr[arrCount - 1]) {
+            return int2(arrCount - 1, arrCount); // 大于等于最大值
+        }
 
+        // 顺序查找第一个大于X的元素索引
+        [unroll] 
+        for (int i = 0; i < arrCount; i++) {
+            if (timeArr[i] > gradientTime) {
+                return int2(i - 1, i); // 返回区间索引
+            }
+        }
+        return int2(-1, 0); // 理论上不会执行此处
+    }
+    half GetGradientIndexInterval(half timeArr[6],int arrCount,int2 indexes,half gradientTime)
+    {
+        //超出范围的直接在外面就判断好。
+        // half smallVal = indexes.x < 0 ? 0:timeArr[indexes.x]; 
+        half smallVal = timeArr[indexes.x]; 
+        // half bigVal = indexes.y >= arrCount ? 1 : timeArr[indexes.y]; 
+        half bigVal = timeArr[indexes.y]; 
+        return (gradientTime - smallVal) / (bigVal - smallVal);
+    }
 
+    half3 GetGradientColorValue(half3 colorArr[6],half timeArr[6], int arrCount,half gradientTime)
+    {
+        int2 indexes = GetGradientIndex(timeArr, arrCount, gradientTime);
+        if (indexes.x < 0) return colorArr[0];
+        if (indexes.y >= arrCount ) return colorArr[arrCount - 1];
+        half interval = GetGradientIndexInterval(timeArr, arrCount, indexes, gradientTime);
+        interval = saturate(interval);
+        return lerp(colorArr[indexes.x], colorArr[indexes.y], interval);
+    }
+
+    half GetGradientAlphaValue(half alphaArr[6],half timeArr[6], int arrCount,half gradientTime)
+    {
+        int2 indexes = GetGradientIndex(timeArr, arrCount, gradientTime);
+        if (indexes.x < 0) return alphaArr[0];
+        if (indexes.y >= arrCount ) return alphaArr[arrCount - 1];
+        half interval = GetGradientIndexInterval(timeArr, arrCount, indexes, gradientTime);
+        interval = saturate(interval);
+        interval *= interval;//Make Alpha Smoother
+        half alpha  = lerp(alphaArr[indexes.x], alphaArr[indexes.y], interval);
+        return alpha ;
+    }
 #endif

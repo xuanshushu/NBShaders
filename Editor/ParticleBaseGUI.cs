@@ -24,7 +24,7 @@ namespace UnityEditor
         private readonly string _defaultStencilKey = "ParticleBaseDefault";
 
         private StencilValuesConfig _stencilValuesConfig;
-
+        
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props)
         {
             //一定要初始化在第一行
@@ -424,9 +424,12 @@ namespace UnityEditor
             }
 
         }
-
-      
-
+  
+        [GradientUsage(true)]
+        public Gradient rampColorGradient = null;
+        private MaterialProperty[] rampColorPropArr = new MaterialProperty[6];
+        private MaterialProperty[] rampColorAlphaPropArr = new MaterialProperty[3];
+        
         private FxLightMode _fxLightMode;
         public void DrawLightOptions()
         {
@@ -639,7 +642,7 @@ namespace UnityEditor
                 DrawCustomDataSelect("色散强度自定义曲线",W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,0);
              });
             
-            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitEmission,3,GetAnimBoolIndex(3),"流光","_EmissionEnabled",shaderKeyword:"_EMISSION",isIndentBlock:true,fontStyle:FontStyle.Bold,
+            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitEmission,3,GetAnimBoolIndex(3),"流光(颜色相加)","_EmissionEnabled",shaderKeyword:"_EMISSION",isIndentBlock:true,fontStyle:FontStyle.Bold,
             drawBlock: (isToggle) =>{
                 _helper.DrawTexture("流光贴图","_EmissionMap","_EmissionMapColor",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_EMISSIONMAP,flagIndex:2,drawBlock:theEmissionMap=>
                 {
@@ -660,6 +663,78 @@ namespace UnityEditor
                 // }
             });
             
+            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutColorBlend,3,GetAnimBoolIndex(3),"渐变(颜色相乘)","_ColorBlendMap_Toggle",shaderKeyword:"_COLORMAPBLEND",isIndentBlock:true,fontStyle:FontStyle.Bold, 
+                drawBlock:(isToggle) => {
+                    _helper.DrawTexture("颜色渐变贴图","_ColorBlendMap",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_COLORBLENDMAP,flagIndex:2,drawBlock:
+                        texProp =>
+                        {
+                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeColorBlendMap,4,"颜色渐变贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP,0,texProp);
+                        });
+                    matEditor.ColorProperty(_helper.GetProperty("_ColorBlendColor"), "颜色渐变叠加");
+                    _helper.DrawVector4In2Line("_ColorBlendMapOffset","颜色渐变贴图偏移速度",true);
+                    _helper.DrawVector4Component("颜色渐变贴图旋转","_ColorBlendMapOffset","w",true,0f,360f);
+                });
+            
+            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2RampColor,5,GetAnimBoolIndex(5),"颜色映射(Ramp)","_RampColorToggle",shaderKeyword:"_COLOR_RAMP",isIndentBlock:true,fontStyle:FontStyle.Bold,drawBlock:
+                isToggleProp =>
+                {
+                    _helper.DrawPopUp("Ramp来源模式","_RampColorSourceMode",rampColorSourceMode,
+                        drawBlock: modeProp =>
+                        {
+                            if (!modeProp.hasMixedValue)
+                            {
+                                if (modeProp.floatValue >= 0.5f)
+                                {
+                                    _helper.DrawTexture("颜色映射黑白图","_RampColorMap",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP,flagIndex:2,
+                                        drawBlock: texProp => {
+                                            DrawColorChannelSelect("颜色映射黑白图通道选择",W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_RAMP_COLOR_MAP);
+                                        });
+                                }
+                                else
+                                {
+                                    matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_RampColorMap"));
+                                    _helper.DrawWrapMode("颜色映射UV",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP,2);
+                                }
+                            }
+                        },drawOnValueChangedBlock: modeProp =>
+                        {
+                            for (int i = 0; i < shaderFlags.Count; i++)
+                            {
+                                if (modeProp.floatValue > 0.5f)
+                                {
+                                    shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_RAMP_COLOR_MAP_MODE_ON);
+                                }
+                                else
+                                {
+                                    shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_RAMP_COLOR_MAP_MODE_ON);
+                                }
+                            }
+                        });
+                    DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeRampColorMap,4,"颜色映射黑白图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_RAMP_COLOR_MAP,0,_helper.GetProperty("_RampColorMap"));
+                    _helper.DrawVector4In2Line("_RampColorMapOffset","颜色映射贴图偏移动画",true);
+                    _helper.DrawVector4Component("颜色映射贴图旋转","_RampColorMapOffset","w",true,0f,360f);
+                    rampColorPropArr[0] = _helper.GetProperty("_RampColor0"); rampColorPropArr[1] = _helper.GetProperty("_RampColor1"); rampColorPropArr[2] = _helper.GetProperty("_RampColor2"); rampColorPropArr[3] = _helper.GetProperty("_RampColor3"); rampColorPropArr[4] = _helper.GetProperty("_RampColor4"); rampColorPropArr[5] = _helper.GetProperty("_RampColor5");
+                    rampColorAlphaPropArr[0] = _helper.GetProperty("_RampColorAlpha0"); rampColorAlphaPropArr[1] = _helper.GetProperty("_RampColorAlpha1"); rampColorAlphaPropArr[2] = _helper.GetProperty("_RampColorAlpha2");
+                    _helper.DrawGradient(ref rampColorGradient,"映射颜色",6,_helper.GetProperty("_RampColorCount"),rampColorPropArr,rampColorAlphaPropArr);
+                    _helper.DrawPopUp("Ramp颜色混合模式","_RampColorBlendMode",rampColorBlendMode,drawOnValueChangedBlock:
+                        modeProp =>
+                        {
+                            for (int i = 0; i < shaderFlags.Count; i++)
+                            {
+                                if (modeProp.floatValue > 0.5f)
+                                {
+                                    shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_MULTIPLY);
+                                }
+                                else
+                                {
+                                    shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_MULTIPLY);
+                                }
+                            }
+                        });
+                    matEditor.ShaderProperty(_helper.GetProperty("_RampColorBlendColor"),"颜色映射叠加颜色_hdr");
+                    
+                    
+                });
             _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutDissolve,3,GetAnimBoolIndex(3),"溶解","_Dissolve_Toggle",shaderKeyword:"_DISSOLVE",isIndentBlock:true,fontStyle:FontStyle.Bold,
             drawBlock:(isToggle) =>{
                 _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutDissolveMap,3,GetAnimBoolIndex(3),"溶解贴图","_DissolveMap",drawScaleOffset:true,drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_MAP,flagIndex:2,
@@ -726,16 +801,7 @@ namespace UnityEditor
                 
             });
             
-            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutColorBlend,3,GetAnimBoolIndex(3),"颜色渐变","_ColorBlendMap_Toggle",shaderKeyword:"_COLORMAPBLEND",isIndentBlock:true,fontStyle:FontStyle.Bold, 
-            drawBlock:(isToggle) => {
-                _helper.DrawTexture("颜色渐变贴图","_ColorBlendMap",drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_COLORBLENDMAP,flagIndex:2,drawBlock:
-                    texProp =>
-                    {
-                        DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeColorBlendMap,4,"颜色渐变贴图UV来源",W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP,0,texProp);
-                    });
-                matEditor.ColorProperty(_helper.GetProperty("_ColorBlendColor"), "颜色渐变叠加");
-                _helper.DrawVector4In2Line("_ColorBlendMapOffset","颜色渐变贴图偏移速度",true);
-            });
+
             
             _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutFresnel,3,GetAnimBoolIndex(3),"菲涅尔","_fresnelEnabled",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_ON,isIndentBlock:true,fontStyle:FontStyle.Bold,
             drawBlock: (isToggle) => {
@@ -1173,6 +1239,18 @@ namespace UnityEditor
         {
             "相加Add",
             "相乘Multiply",
+        };
+
+        private string[] rampColorSourceMode =
+        {
+            "UV",
+            "映射贴图"
+        };
+        
+        private string[] rampColorBlendMode =
+        {
+            "相加Add",
+            "相乘Multiply"
         };
         
         void DoAfterDraw()
@@ -1801,10 +1879,17 @@ namespace UnityEditor
             }
             return false;
         }
-        public void DrawUVModeSelect(int foldOutFlagBit, int foldOutFlagIndex,string label, int uvModeBitPos, int uvModeFlagIndex,MaterialProperty textureProp)
+        public void DrawUVModeSelect(int foldOutFlagBit, int foldOutFlagIndex,string label, int uvModeBitPos, int uvModeFlagIndex,MaterialProperty textureProp = null)
         {
             // if(textureProp.hasMixedValue) return;
-            EditorGUI.BeginDisabledGroup(!textureProp.textureValue);
+            if (textureProp != null)
+            {
+                EditorGUI.BeginDisabledGroup(!textureProp.textureValue);
+            }
+            else
+            {
+                EditorGUI.BeginDisabledGroup(false);
+            }
             EditorGUI.indentLevel++;
             bool uvModeHasMixedValue = UvModeHasMixedValue(uvModeBitPos, uvModeFlagIndex);
             EditorGUI.showMixedValue = uvModeHasMixedValue;
