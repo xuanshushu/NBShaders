@@ -67,6 +67,20 @@
     half4 _MaskMapOffsetAnition;
     half4 _MaskMap3OffsetAnition;
     half4 _MaskMapVec;
+
+    int _MaskMapGradientCount;
+    half4 _MaskMapGradientFloat0;
+    half4 _MaskMapGradientFloat1;
+    half4 _MaskMapGradientFloat2;
+    int _MaskMap2GradientCount;
+    half4 _MaskMap2GradientFloat0;
+    half4 _MaskMap2GradientFloat1;
+    half4 _MaskMap2GradientFloat2;
+    int _MaskMap3GradientCount;
+    half4 _MaskMap3GradientFloat0;
+    half4 _MaskMap3GradientFloat1;
+    half4 _MaskMap3GradientFloat2;
+
     float4 _PCCenter;
     float4 _TWParameter;
     float _TWStrength;
@@ -1285,9 +1299,9 @@ Texture2D _MatCapTex;
         if (indexes.x < 0) return alphaArr[0];
         if (indexes.y >= arrCount ) return alphaArr[arrCount - 1];
         half interval = GetGradientIndexInterval(timeArr, arrCount, indexes, gradientTime);
-        interval = saturate(interval);
-        interval *= interval;//Make Alpha Smoother
+        interval = smoothstep(0,1,interval);//TODO:消耗很大，如何避免？
         half alpha  = lerp(alphaArr[indexes.x], alphaArr[indexes.y], interval);
+        alpha *= alpha;//Make Alpha Smoother
         return alpha ;
     }
 #endif

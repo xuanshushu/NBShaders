@@ -773,22 +773,90 @@
             #if defined(_NOISEMAP)
                 MaskMapuv += cum_noise * _MaskDistortion_intensity; //加入扭曲效果
             #endif
-            half4 maskmap1Sample = SampleTexture2DWithWrapFlags(_MaskMap, MaskMapuv,FLAG_BIT_WRAPMODE_MASKMAP);
-            half mask1 = GetColorChannel(maskmap1Sample,FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP1);
+
+            half mask1 = 1;
+            if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASKMAP_GRADIENT))
+            {
+                const int maskMapWrapMode = CheckLocalWrapFlags(FLAG_BIT_WRAPMODE_MASKMAP);
+                half maskMapTimeValue;
+                if (maskMapWrapMode == 0 || maskMapWrapMode == 2)
+                {
+                    maskMapTimeValue = frac(MaskMapuv.x);
+                }
+                else
+                {
+                    maskMapTimeValue = saturate(MaskMapuv.x);
+                }
+
+                half maskMapAlphaArr[] = {_MaskMapGradientFloat0.x,_MaskMapGradientFloat0.z,_MaskMapGradientFloat1.x,_MaskMapGradientFloat1.z,_MaskMapGradientFloat2.x,_MaskMapGradientFloat2.z};
+                half maskMapAlphaTimeArr[] = {_MaskMapGradientFloat0.y,_MaskMapGradientFloat0.w,_MaskMapGradientFloat1.y,_MaskMapGradientFloat1.w,_MaskMapGradientFloat2.y,_MaskMapGradientFloat2.w};
+                int maskMapAlphaCount = _MaskMapGradientCount;
+                mask1 = GetGradientAlphaValue(maskMapAlphaArr,maskMapAlphaTimeArr,maskMapAlphaCount,maskMapTimeValue);
+            }
+            else
+            {
+                half4 maskmap1Sample = SampleTexture2DWithWrapFlags(_MaskMap, MaskMapuv,FLAG_BIT_WRAPMODE_MASKMAP);
+                mask1 = GetColorChannel(maskmap1Sample,FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP1);
+              
+            }
         
             UNITY_BRANCH
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASK_MAP2))
             {
-                half maskMap2Sample = SampleTexture2DWithWrapFlags(_MaskMap2, MaskMapuv2,FLAG_BIT_WRAPMODE_MASKMAP2).r;
-                half mask2 = GetColorChannel(maskMap2Sample,FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2);
+                half mask2 = 1;
+                if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASKMAP_2_GRADIENT))
+                {
+                    const int maskMap2WrapMode = CheckLocalWrapFlags(FLAG_BIT_WRAPMODE_MASKMAP2);
+                    half maskMap2TimeValue;
+                    if (maskMap2WrapMode == 0 || maskMap2WrapMode == 3)
+                    {
+                        maskMap2TimeValue = frac(MaskMapuv2.y);
+                    }
+                    else
+                    {
+                        maskMap2TimeValue = saturate(MaskMapuv2.y);
+                    }
+
+                    half maskMap2AlphaArr[] = {_MaskMap2GradientFloat0.x,_MaskMap2GradientFloat0.z,_MaskMap2GradientFloat1.x,_MaskMap2GradientFloat1.z,_MaskMap2GradientFloat2.x,_MaskMap2GradientFloat2.z};
+                    half maskMap2AlphaTimeArr[] = {_MaskMap2GradientFloat0.y,_MaskMap2GradientFloat0.w,_MaskMap2GradientFloat1.y,_MaskMap2GradientFloat1.w,_MaskMap2GradientFloat2.y,_MaskMap2GradientFloat2.w};
+                    int maskMap2AlphaCount = _MaskMap2GradientCount;
+                    mask2 = GetGradientAlphaValue(maskMap2AlphaArr,maskMap2AlphaTimeArr,maskMap2AlphaCount,maskMap2TimeValue);
+                }
+                else
+                {
+                    half4 maskMap2Sample = SampleTexture2DWithWrapFlags(_MaskMap2, MaskMapuv2,FLAG_BIT_WRAPMODE_MASKMAP2);
+                    mask2 = GetColorChannel(maskMap2Sample,FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2);
+                }
                 mask1 *= mask2;
             }
 
             UNITY_BRANCH
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASK_MAP3))
             {
-                half maskMap3Sample = SampleTexture2DWithWrapFlags(_MaskMap3, MaskMapuv3,FLAG_BIT_WRAPMODE_MASKMAP3).r;
-                half mask3 = GetColorChannel(maskMap3Sample,FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3);
+                half mask3 = 1;
+                if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASKMAP_3_GRADIENT))
+                {
+                    const int maskMap3WrapMode = CheckLocalWrapFlags(FLAG_BIT_WRAPMODE_MASKMAP3);
+                    half maskMap3TimeValue;
+                    if (maskMap3WrapMode == 0 || maskMap3WrapMode == 2)
+                    {
+                        maskMap3TimeValue = frac(MaskMapuv3.x);
+                    }
+                    else
+                    {
+                        maskMap3TimeValue = saturate(MaskMapuv3.x);
+                    }
+
+                    half maskMap3AlphaArr[] = {_MaskMap3GradientFloat0.x,_MaskMap3GradientFloat0.z,_MaskMap3GradientFloat1.x,_MaskMap3GradientFloat1.z,_MaskMap3GradientFloat2.x,_MaskMap3GradientFloat2.z};
+                    half maskMap3AlphaTimeArr[] = {_MaskMap3GradientFloat0.y,_MaskMap3GradientFloat0.w,_MaskMap3GradientFloat1.y,_MaskMap3GradientFloat1.w,_MaskMap3GradientFloat2.y,_MaskMap3GradientFloat2.w};
+                    int maskMap3AlphaCount = _MaskMap3GradientCount;
+                    mask3 = GetGradientAlphaValue(maskMap3AlphaArr,maskMap3AlphaTimeArr,maskMap3AlphaCount,maskMap3TimeValue);
+                }
+                else
+                {
+                    half4 maskMap3Sample = SampleTexture2DWithWrapFlags(_MaskMap3, MaskMapuv3,FLAG_BIT_WRAPMODE_MASKMAP3);
+                    mask3 = GetColorChannel(maskMap3Sample,FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3);
+                }
                 mask1 *= mask3;
             }
 

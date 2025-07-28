@@ -124,9 +124,9 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     
     public const int FLAG_BIT_PARTICLE_1_DEPTH_OUTLINE= 1 << 0;
     public const int FLAG_BIT_PARTICLE_1_PARALLAX_MAPPING= 1 << 1;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA1X_DISSOLVETEXOFFSETX= 1 << 2;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA1Y_DISSOLVETEXOFFSETY = 1 << 3;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA1Z_NOISE_INTENSITY = 1 << 4;
+    public const int FLAG_BIT_PARTICLE_1_MASKMAP_GRADIENT= 1 << 2;
+    public const int FLAG_BIT_PARTICLE_1_MASKMAP_2_GRADIENT = 1 << 3;
+    public const int FLAG_BIT_PARTICLE_1_MASKMAP_3_GRADIENT = 1 << 4;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA1W_SATURATE = 1 << 5;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2X_VERTEXOFFSETX = 1 << 6;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2Y_VERTEXOFFSETY = 1 << 7;
