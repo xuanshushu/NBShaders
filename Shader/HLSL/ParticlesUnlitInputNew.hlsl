@@ -151,6 +151,17 @@
     float4 _RampColorMapOffset;
     half4 _RampColorMap_ST;
 
+    half4 _DissolveRampColor0;
+    half4 _DissolveRampColor1;
+    half4 _DissolveRampColor2;
+    half4 _DissolveRampColor3;
+    half4 _DissolveRampColor4;
+    half4 _DissolveRampColor5;
+    half4 _DissolveRampAlpha0;
+    half4 _DissolveRampAlpha1;
+    half4 _DissolveRampAlpha2;
+    uint _DissolveRampCount;
+
 
     half3  _VertexOffset_Vec;
     half3 _VertexOffset_CustomDir;
@@ -1289,7 +1300,7 @@ Texture2D _MatCapTex;
         if (indexes.x < 0) return colorArr[0];
         if (indexes.y >= arrCount ) return colorArr[arrCount - 1];
         half interval = GetGradientIndexInterval(timeArr, arrCount, indexes, gradientTime);
-        interval = saturate(interval);
+        interval = SmoothStep01(interval);
         return lerp(colorArr[indexes.x], colorArr[indexes.y], interval);
     }
 
@@ -1299,7 +1310,7 @@ Texture2D _MatCapTex;
         if (indexes.x < 0) return alphaArr[0];
         if (indexes.y >= arrCount ) return alphaArr[arrCount - 1];
         half interval = GetGradientIndexInterval(timeArr, arrCount, indexes, gradientTime);
-        interval = smoothstep(0,1,interval);//TODO:消耗很大，如何避免？
+        interval = SmoothStep01(interval);//TODO:消耗很大，如何避免？
         half alpha  = lerp(alphaArr[indexes.x], alphaArr[indexes.y], interval);
         alpha *= alpha;//Make Alpha Smoother
         return alpha ;

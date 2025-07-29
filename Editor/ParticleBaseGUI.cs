@@ -425,7 +425,6 @@ namespace UnityEditor
 
         }
   
-        [GradientUsage(true)]
         public Gradient rampColorGradient = null;
         private MaterialProperty[] rampColorPropArr = new MaterialProperty[6];
         private MaterialProperty[] rampColorAlphaPropArr = new MaterialProperty[3];
@@ -435,6 +434,10 @@ namespace UnityEditor
         private MaterialProperty[] maskMapGradientPropArr = new MaterialProperty[3];
         private MaterialProperty[] maskMap2GradientPropArr = new MaterialProperty[3];
         private MaterialProperty[] maskMap3GradientPropArr = new MaterialProperty[3];
+        
+        public Gradient dissolveRampGradient = null;
+        private MaterialProperty[] dissolveRampColorPropArr = new MaterialProperty[6];
+        private MaterialProperty[] dissolveRampAlphaPropArr = new MaterialProperty[3];
         
         private FxLightMode _fxLightMode;
         public void DrawLightOptions()
@@ -559,7 +562,7 @@ namespace UnityEditor
                             else
                             {
                                 maskMapGradientPropArr[0] = _helper.GetProperty("_MaskMapGradientFloat0");maskMapGradientPropArr[1] = _helper.GetProperty("_MaskMapGradientFloat1");maskMapGradientPropArr[2] = _helper.GetProperty("_MaskMapGradientFloat2");
-                                _helper.DrawGradient(ref maskMapGradient,"遮罩渐变",6,"_MaskMapGradientCount",alphaProperties:maskMapGradientPropArr);
+                                _helper.DrawGradient(ref maskMapGradient,false,ColorSpace.Gamma,"遮罩渐变",6,"_MaskMapGradientCount",alphaProperties:maskMapGradientPropArr);
                                 matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap"));
                                 _helper.DrawWrapMode("遮罩UV",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP,flagIndex:2);
                             }
@@ -611,7 +614,7 @@ namespace UnityEditor
                                     else
                                     {
                                         maskMap2GradientPropArr[0] = _helper.GetProperty("_MaskMap2GradientFloat0");maskMap2GradientPropArr[1] = _helper.GetProperty("_MaskMap2GradientFloat1");maskMap2GradientPropArr[2] = _helper.GetProperty("_MaskMap2GradientFloat2");
-                                        _helper.DrawGradient(ref maskMap2Gradient,"遮罩2渐变(UV纵向)",6,"_MaskMap2GradientCount",alphaProperties:maskMap2GradientPropArr);
+                                        _helper.DrawGradient(ref maskMap2Gradient,false,ColorSpace.Gamma,"遮罩2渐变(UV纵向)",6,"_MaskMap2GradientCount",alphaProperties:maskMap2GradientPropArr);
                                         matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap2"));
                                         _helper.DrawWrapMode("遮罩2UV",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2,flagIndex:2);
                                         
@@ -654,7 +657,7 @@ namespace UnityEditor
                                     else
                                     {
                                         maskMap3GradientPropArr[0] = _helper.GetProperty("_MaskMap3GradientFloat0");maskMap3GradientPropArr[1] = _helper.GetProperty("_MaskMap3GradientFloat1");maskMap3GradientPropArr[2] = _helper.GetProperty("_MaskMap3GradientFloat2");
-                                        _helper.DrawGradient(ref maskMap3Gradient,"遮罩3渐变(UV横向)",6,"_MaskMap3GradientCount",alphaProperties:maskMap3GradientPropArr);
+                                        _helper.DrawGradient(ref maskMap3Gradient,false,ColorSpace.Gamma,"遮罩3渐变(UV横向)",6,"_MaskMap3GradientCount",alphaProperties:maskMap3GradientPropArr);
                                         matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap3"));
                                         _helper.DrawWrapMode("遮罩3UV",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3,flagIndex:2);
                                         
@@ -812,7 +815,7 @@ namespace UnityEditor
                     _helper.DrawVector4Component("颜色映射贴图旋转","_RampColorMapOffset","w",true,0f,360f);
                     rampColorPropArr[0] = _helper.GetProperty("_RampColor0"); rampColorPropArr[1] = _helper.GetProperty("_RampColor1"); rampColorPropArr[2] = _helper.GetProperty("_RampColor2"); rampColorPropArr[3] = _helper.GetProperty("_RampColor3"); rampColorPropArr[4] = _helper.GetProperty("_RampColor4"); rampColorPropArr[5] = _helper.GetProperty("_RampColor5");
                     rampColorAlphaPropArr[0] = _helper.GetProperty("_RampColorAlpha0"); rampColorAlphaPropArr[1] = _helper.GetProperty("_RampColorAlpha1"); rampColorAlphaPropArr[2] = _helper.GetProperty("_RampColorAlpha2");
-                    _helper.DrawGradient(ref rampColorGradient,"映射颜色",6,"_RampColorCount",rampColorPropArr,rampColorAlphaPropArr);
+                    _helper.DrawGradient(ref rampColorGradient,true,ColorSpace.Gamma,"映射颜色",6,"_RampColorCount",rampColorPropArr,rampColorAlphaPropArr);
                     _helper.DrawPopUp("Ramp颜色混合模式","_RampColorBlendMode",rampColorBlendMode,drawOnValueChangedBlock:
                         modeProp =>
                         {
@@ -881,7 +884,40 @@ namespace UnityEditor
                 matEditor.ColorProperty(_helper.GetProperty("_DissolveLineColor"),"溶解描边颜色");
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutDissolveRampMap,3,GetAnimBoolIndex(3),"溶解Ramp图功能","_Dissolve_useRampMap_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_DISSOVLE_USE_RAMP,flagIndex:1,isIndentBlock:true,drawBlock:
                     isDissolveUseRampToggle => {
-                            _helper.DrawTexture("溶解Ramp图","_DissolveRampMap","_DissolveRampColor",drawScaleOffset:true,drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP,flagIndex:2);                       
+                        _helper.DrawPopUp("溶解Ramp模式","_DissolveRampSourceMode",dissolveRampSourceMode,
+                            drawBlock: dissolveRampModeProp =>
+                            {
+                                if (!dissolveRampModeProp.hasMixedValue)
+                                {
+                                    if (dissolveRampModeProp.floatValue > 0.5f)
+                                    {
+                                        _helper.DrawTexture("溶解Ramp图","_DissolveRampMap","_DissolveRampColor",drawScaleOffset:true,drawWrapMode:true,wrapModeFlagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP,flagIndex:2);                       
+                                    }
+                                    else
+                                    {
+                                        dissolveRampColorPropArr[0] = _helper.GetProperty("_DissolveRampColor0"); dissolveRampColorPropArr[1] = _helper.GetProperty("_DissolveRampColor1"); dissolveRampColorPropArr[2] = _helper.GetProperty("_DissolveRampColor2"); dissolveRampColorPropArr[3] = _helper.GetProperty("_DissolveRampColor3"); dissolveRampColorPropArr[4] = _helper.GetProperty("_DissolveRampColor4"); dissolveRampColorPropArr[5] = _helper.GetProperty("_DissolveRampColor5");
+                                        dissolveRampAlphaPropArr[0] = _helper.GetProperty("_DissolveRampAlpha0"); dissolveRampAlphaPropArr[1] = _helper.GetProperty("_DissolveRampAlpha1"); dissolveRampAlphaPropArr[2] = _helper.GetProperty("_DissolveRampAlpha2");
+                                        _helper.DrawGradient(ref dissolveRampGradient,true,ColorSpace.Gamma,"Ramp颜色",6,"_DissolveRampCount",dissolveRampColorPropArr,dissolveRampAlphaPropArr);
+                                        matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_DissolveRampMap"));
+                                        matEditor.ShaderProperty(_helper.GetProperty("_DissolveRampColor"),"Ramp颜色叠加");
+                                        _helper.DrawWrapMode("溶解RampUV",W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP,2);
+                                        
+                                    }
+                                }
+                            },drawOnValueChangedBlock: dissolveRampModeProp =>
+                            {
+                                for (int i = 0; i < shaderFlags.Count; i++)
+                                {
+                                    if (dissolveRampModeProp.floatValue < 0.5f)
+                                    {
+                                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT);
+                                    }
+                                    else
+                                    {
+                                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT);
+                                    }
+                                }
+                            });
                     });
                 
                 
@@ -1350,6 +1386,12 @@ namespace UnityEditor
             "映射贴图"
         };
         
+        private string[] dissolveRampSourceMode =
+        {
+            "渐变控件",
+            "Ramp贴图"
+        };
+        
         private string[] rampColorBlendMode =
         {
             "相加Add",
@@ -1703,7 +1745,7 @@ namespace UnityEditor
                 needTangent = true;
             }
 
-            if (_fxLightMode != FxLightMode.UnLit)
+            if (_fxLightMode != FxLightMode.UnLit || material.GetFloat("_BumpMapToggle") > 0.5f)
             {
                 needNormal = true;
                 needTangent = true;

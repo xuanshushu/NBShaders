@@ -683,12 +683,42 @@
             {
                 half rampRange = 1-dissolveValueBeforeSoftStep ;
                 rampRange = rampRange * _DissolveRampMap_ST.x +_DissolveRampMap_ST.z;
+
+                half4 rampSample ;
+                if (CheckLocalFlags(FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT))
+                {
+                    half3 dissolveRampColorArr[] = {_DissolveRampColor0.rgb,_DissolveRampColor1.rgb,_DissolveRampColor2.rgb,_DissolveRampColor3.rgb,_DissolveRampColor4.rgb,_DissolveRampColor5.rgb};
+                    half dissolveRampColorTimeArr[] = {_DissolveRampColor0.a,_DissolveRampColor1.a,_DissolveRampColor2.a,_DissolveRampColor3.a,_DissolveRampColor4.a,_DissolveRampColor5.a};
+                    int dissolveRampColorCount = _DissolveRampCount & 0xFFFF;
+
+                    half dissolveRampAlphaArr[] = {_DissolveRampAlpha0.x,_DissolveRampAlpha0.z,_DissolveRampAlpha1.x,_DissolveRampAlpha1.z,_DissolveRampAlpha2.x,_DissolveRampAlpha2.z};
+                    half dissolveRampAlphaTimeArr[] = {_DissolveRampAlpha0.y,_DissolveRampAlpha0.w,_DissolveRampAlpha1.y,_DissolveRampAlpha1.w,_DissolveRampAlpha2.y,_DissolveRampAlpha2.w};
+                    int dissolveRampAlphaCount = _DissolveRampCount >> 16;
+
+                    const int rampWrapMode = CheckLocalWrapFlags(FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP);
+                    if (rampWrapMode == 0 || rampWrapMode == 2)
+                    {
+                        rampRange = frac(rampRange);
+                    }
+                    else
+                    {
+                        rampRange = saturate(rampRange);
+                    }
+                    
+                    
+                    rampSample.rgb = GetGradientColorValue(dissolveRampColorArr,dissolveRampColorTimeArr,dissolveRampColorCount,rampRange);
+                    rampSample.a = GetGradientAlphaValue(dissolveRampAlphaArr,dissolveRampAlphaTimeArr,dissolveRampAlphaCount,rampRange);
+                }
+                else
+                {
+                    rampSample = SampleTexture2DWithWrapFlags(_DissolveRampMap,half2(rampRange,0.5),FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP);
+                }
+
                 
-                half4 rampSample = SampleTexture2DWithWrapFlags(_DissolveRampMap,half2(rampRange,0.5),FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP);
                 result = lerp(result,rampSample.rgb*_DissolveRampColor.rgb,rampSample.a*_DissolveRampColor.a);
             }
            
-            half lineMask = 1 - smoothstep(0,softStep,alpha * (dissolveValueBeforeSoftStep - _Dissolve.y));
+            half lineMask = 1 - smoothstep(0,softStep,alpha * (dissolveValueBeforeSoftStep - _Dissolve.y));//SmoothStep要优化
             result = lerp(result,_DissolveLineColor.rgb,lineMask*_DissolveLineColor.a);
             
             

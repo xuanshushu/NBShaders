@@ -224,6 +224,18 @@
         _Dissolve_Vec2("溶解丝滑度（溶解值黑白调整）黑色X,白色Y",Vector) = (0,1,0,0)
         _DissolveRampMap("溶解Ramp图",2D) = "white"{}
         [HDR]_DissolveRampColor("溶解Ramp颜色_hdr",Color) = (1,1,1,1)
+	    
+    	_DissolveRampSourceMode("溶解Ramp来源模式",Float) = 0
+    	_DissolveRampColor0("rgb:DissolveRampColor0,a:pos",Color) = (1,1,1,0)
+    	_DissolveRampColor1("rgb:DissolveRampColor1,a:pos",Color) = (1,1,1,1)
+    	_DissolveRampColor2("rgb:DissolveRampColor2,a:pos",Color) = (1,1,1,1)
+    	_DissolveRampColor3("rgb:DissolveRampColor3,a:pos",Color) = (1,1,1,1)
+    	_DissolveRampColor4("rgb:DissolveRampColor4,a:pos",Color) = (1,1,1,1)
+    	_DissolveRampColor5("rgb:DissolveRampColor5,a:pos",Color) = (1,1,1,1)
+    	_DissolveRampAlpha0("x:DissolveRampAlpha0,y:Pos0,z:DissolveRampAlpha1,w:Pos1",Vector) = (1,0,1,1)
+    	_DissolveRampAlpha1("x:DissolveRampAlpha2,y:Pos2,z:DissolveRampAlpha3,w:Pos3",Vector) = (1,0,1,1)
+    	_DissolveRampAlpha2("x:DissolveRampAlpha4,y:Pos4,z:DissolveRampAlpha5,w:Pos5",Vector) = (1,0,1,1)
+    	_DissolveRampCount("溶解Ramp映射数量",Integer) = 2
     	
 
         

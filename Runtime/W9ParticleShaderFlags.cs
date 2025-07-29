@@ -115,7 +115,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_RAMP_COLOR_MAP_MODE_ON = 1 << 23;
     public const int FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_MULTIPLY= 1 << 24;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY = 1 << 25;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA2Z_FRESNELOFFSET = 1 << 26;
+    public const int FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT = 1 << 26;
     public const int FLAG_BIT_PARTICLE_DISSOLVE_MASK = 1 << 27;
     public const int FLAG_BIT_PARTICLE_BACKCOLOR = 1 << 28;
     public const int FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC = 1 << 29;
