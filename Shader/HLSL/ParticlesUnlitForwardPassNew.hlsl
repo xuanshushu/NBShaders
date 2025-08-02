@@ -556,7 +556,10 @@
         half4 emission = half4(0, 0, 0,1);
         #if defined(_EMISSION)
             #ifdef _NOISEMAP
+            if (!CheckLocalFlags(FLAG_BIT_PARTICLE_EMISSION_FOLLOW_MAINTEX_UV))
+            {
                 emission_uv += cum_noise * _Emi_Distortion_intensity;
+            }
             #endif
             // emission = tex2D_TryLinearizeWithoutAlphaFX(_EmissionMap,emission_uv);
             emission = SampleTexture2DWithWrapFlags(_EmissionMap,emission_uv,FLAG_BIT_WRAPMODE_EMISSIONMAP);
@@ -603,7 +606,7 @@
 
             rampColor *= _RampColorBlendColor;
         
-            if (CheckLocalFlags(FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_MULTIPLY))
+            if (CheckLocalFlags(FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_ALPHA_MULTIPLY))
             {
                 result *= rampColor;
                 alpha *= rampColor.a;
@@ -652,36 +655,42 @@
                 
             }
 
-            dissolveValue = SimpleSmoothstep(_Dissolve_Vec2.x,_Dissolve_Vec2.y,dissolveValue);
+            // dissolveValue = SimpleSmoothstep(_Dissolve_Vec2.x,_Dissolve_Vec2.y,dissolveValue);
+            dissolveValue = pow(dissolveValue,_Dissolve.y);
 
             #ifdef _DISSOLVE_EDITOR_TEST      //后续Test类的关键字要找机会排除
                 return half4(dissolveValue.rrr,1);
             #endif
                
 
-            half dissolveMaskValue = 0;
+          
             UNITY_BRANCH
             if(CheckLocalFlags(FLAG_BIT_PARTICLE_DISSOLVE_MASK))
             {
+                half dissolveMaskValue = 0;
                 half4 dissolveMaskSample = SampleTexture2DWithWrapFlags(_DissolveMaskMap,dissolve_mask_uv,FLAG_BIT_WRAPMODE_DISSOLVE_MASKMAP);
                 dissolveMaskValue = GetColorChannel(dissolveMaskSample,FLAG_BIT_COLOR_CHANNEL_POS_0_DISSOLVE_MASK_MAP);
                 _Dissolve.z += GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_DISSOLVE_MASK_INTENSITY,0,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
-                dissolveMaskValue *= _Dissolve.z;
-                dissolveValue = lerp(dissolveValue,1.01,dissolveMaskValue);
+                dissolveMaskValue += _Dissolve.z;
+                dissolveValue = dissolveMaskValue*dissolveValue;
+                // dissolveMaskValue = saturate(dissolveMaskValue);
             }
-            half originDissolve = dissolveValue;
         
-            _Dissolve.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,0,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
+            half dissolveStrenth = _Dissolve.x + GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,0,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
         
-            dissolveValue = dissolveValue-_Dissolve.x;
-            half dissolveValueBeforeSoftStep = dissolveValue;
-            half softStep = _Dissolve.w;
-            dissolveValue = SimpleSmoothstep(0,softStep,(dissolveValue));
+            half invSoftStep = 1/_Dissolve.w;
+            half dissolveValueBeforeSoftStep = dissolveValue - ((dissolveStrenth)*(invSoftStep + 1)-1)*_Dissolve.w ;
+            dissolveValue = dissolveValue*invSoftStep -(1+invSoftStep)*dissolveStrenth +1;
+        
+            dissolveValue = saturate(dissolveValue);
+        
+
 
             alpha  *= dissolveValue;
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_DISSOVLE_USE_RAMP))
             {
-                half rampRange = 1-dissolveValueBeforeSoftStep ;
+                // half rampRange = (dissolveValueBeforeSoftStep - _Dissolve_Vec2.x)*_Dissolve_Vec2.y;
+                half rampRange = dissolveValueBeforeSoftStep;
                 rampRange = rampRange * _DissolveRampMap_ST.x +_DissolveRampMap_ST.z;
 
                 half4 rampSample ;
@@ -714,22 +723,51 @@
                     rampSample = SampleTexture2DWithWrapFlags(_DissolveRampMap,half2(rampRange,0.5),FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP);
                 }
 
-                
-                result = lerp(result,rampSample.rgb*_DissolveRampColor.rgb,rampSample.a*_DissolveRampColor.a);
+                if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_DISSOLVE_RAMP_MULITPLY))
+                {
+                    result = result * lerp(1,rampSample.rgb*_DissolveRampColor.rgb,rampSample.a*_DissolveRampColor.a);
+                }
+                else
+                {
+                    result = lerp(result,rampSample.rgb*_DissolveRampColor.rgb,rampSample.a*_DissolveRampColor.a);
+                }
             }
            
-            half lineMask = 1 - smoothstep(0,softStep,alpha * (dissolveValueBeforeSoftStep - _Dissolve.y));//SmoothStep要优化
-            result = lerp(result,_DissolveLineColor.rgb,lineMask*_DissolveLineColor.a);
-            
+        
+
+            if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_DISSOLVE_LINE_MASK))
+            {
+                half lineMask = dissolveValueBeforeSoftStep;//SmoothStep要优化
+                lineMask = saturate(lineMask*_Dissolve_Vec2.x+_Dissolve_Vec2.y);
+                lineMask = 1- lineMask;
+                
+                result = lerp(result,_DissolveLineColor.rgb,lineMask*_DissolveLineColor.a);
+            }
+            //
             
         
         #endif
      
         //颜色渐变
         #ifdef _COLORMAPBLEND
+            #if defined(_NOISEMAP)
+            if (!CheckLocalFlags(FLAG_BIT_PARTICLE_COLOR_BLEND_FOLLOW_MAINTEX_UV))
+            {
+                colorBlendMap_uv += cum_noise * _ColorBlendVec.x; //加入扭曲效果
+            }
+            #endif
             half4 colorBlend = SampleTexture2DWithWrapFlags(_ColorBlendMap,colorBlendMap_uv,FLAG_BIT_WRAPMODE_COLORBLENDMAP);
             colorBlend.rgb = colorBlend.rgb * _ColorBlendColor.rgb;
-            result.rgb  = lerp(result.rgb,result.rgb * colorBlend.rgb,_ColorBlendColor.a);
+            colorBlend.a = lerp(1,colorBlend.a*_ColorBlendColor.a,_ColorBlendVec.z);
+            if (CheckLocalFlags(FLAG_BIT_PARTICLE_COLOR_BLEND_ALPHA_MULTIPLY_MODE))
+            {
+                result *= colorBlend.rgb;
+                alpha *= colorBlend.a;
+            }
+            else
+            {
+                result.rgb  = lerp(result.rgb,result.rgb * colorBlend.rgb,colorBlend.a);
+            }
         #endif
 
         //菲涅

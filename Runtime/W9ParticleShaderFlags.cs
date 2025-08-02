@@ -111,14 +111,14 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_HUESHIFT_ON = 1 << 19;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2_ON = 1 << 20;
     public const int FLAG_BIT_PARTICLE_NORMALMAP_MASK_MODE = 1 << 21;
-    public const int FLAG_BIT_PARTICLE_RAMP_COLOR_ON = 1 << 22;
+    public const int FLAG_BIT_PARTICLE_COLOR_BLEND_FOLLOW_MAINTEX_UV = 1 << 22;
     public const int FLAG_BIT_PARTICLE_RAMP_COLOR_MAP_MODE_ON = 1 << 23;
-    public const int FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_MULTIPLY= 1 << 24;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA2Y_MASKMAPOFFSETY = 1 << 25;
+    public const int FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_ALPHA_MULTIPLY= 1 << 24;
+    public const int FLAG_BIT_PARTICLE_COLOR_BLEND_ALPHA_MULTIPLY_MODE = 1 << 25;
     public const int FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT = 1 << 26;
     public const int FLAG_BIT_PARTICLE_DISSOLVE_MASK = 1 << 27;
     public const int FLAG_BIT_PARTICLE_BACKCOLOR = 1 << 28;
-    public const int FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC = 1 << 29;
+    public const int FLAG_BIT_PARTICLE_EMISSION_FOLLOW_MAINTEX_UV= 1 << 29;
     public const int FLAG_BIT_PARTICLE_VERTEX_OFFSET_ON = 1 << 30;
     public const int FLAG_BIT_PARTICLE_VERTEX_OFFSET_NORMAL_DIR= 1 << 31;
     
@@ -127,8 +127,8 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_1_MASKMAP_GRADIENT= 1 << 2;
     public const int FLAG_BIT_PARTICLE_1_MASKMAP_2_GRADIENT = 1 << 3;
     public const int FLAG_BIT_PARTICLE_1_MASKMAP_3_GRADIENT = 1 << 4;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA1W_SATURATE = 1 << 5;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA2X_VERTEXOFFSETX = 1 << 6;
+    public const int FLAG_BIT_PARTICLE_1_DISSOLVE_LINE_MASK = 1 << 5;
+    public const int FLAG_BIT_PARTICLE_1_DISSOLVE_RAMP_MULITPLY = 1 << 6;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2Y_VERTEXOFFSETY = 1 << 7;
     public const int FLAG_BIT_PARTICLE_CUSTOMDATA2W_CHORATICABERRAT_INTENSITY = 1 << 8;
     public const int FLAG_BIT_PARTICLE_1_IGNORE_VERTEX_COLOR = 1 << 9;
@@ -238,6 +238,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutBit2BumpTexToggle= 1 << 0;
     public const int foldOutBit2MatCapToggle= 1 << 1;
     public const int foldOutBit2RampColor= 1 << 2;
+    public const int foldOutBit2DissolveLine= 1 << 3;
 
 
     #region CustomDataCodes

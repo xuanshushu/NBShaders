@@ -34,6 +34,7 @@
     half _fogintensity;
     half _Emi_Distortion_intensity;
     half _BaseMapUVRotation;
+    half _BaseMapUVRotationSpeed;
     float _MaskMapUVRotation;
     float _NoiseMapUVRotation;
     half _uvRapSoft;
@@ -136,6 +137,7 @@
     half4 _ColorBlendMap_ST;
     float4 _ColorBlendMapOffset;
     half4 _ColorBlendColor;
+    half4 _ColorBlendVec;
 
     half4 _RampColor0;
     half4 _RampColor1;
@@ -740,6 +742,7 @@ Texture2D _MatCapTex;
         #ifdef _SCREEN_DISTORT_MODE
             particleUVs.mainTexUV = screenUV;
         #else
+            _BaseMapUVRotation += time * _BaseMapUVRotationSpeed;
             baseMapUV = Rotate_Radians_float(baseMapUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
             UNITY_BRANCH
             if(CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
@@ -765,10 +768,16 @@ Texture2D _MatCapTex;
         #endif
 
         #if defined(_NORMALMAP)
+        if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX))
+        {
+            particleUVs.bumpTexUV = particleUVs.mainTexUV;
+        }
+        else
+        {
             float2 bumpTexUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_BUMPTEX,baseUVs);
             bumpTexUV = TRANSFORM_TEX(bumpTexUV, _BumpTex);
             particleUVs.bumpTexUV = bumpTexUV;
-        
+        }
         #endif
         
         
@@ -817,8 +826,15 @@ Texture2D _MatCapTex;
 
         
         #if defined(_EMISSION)
+        if (CheckLocalFlags(FLAG_BIT_PARTICLE_EMISSION_FOLLOW_MAINTEX_UV))
+        {
+            particleUVs.emissionUV = particleUVs.mainTexUV;
+        }
+        else
+        {
             float2 emissionUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_EMISSION_MAP,baseUVs);
             particleUVs.emissionUV = ParticleUVCommonProcess(emissionUV,_EmissionMap_ST,_EmissionMapUVOffset.xy,_EmissionMapUVRotation);
+        }
         #endif
 
         #if defined(_DISSOLVE)
@@ -854,8 +870,16 @@ Texture2D _MatCapTex;
         #endif
         
         #ifdef _COLORMAPBLEND
+        if (CheckLocalFlags(FLAG_BIT_PARTICLE_COLOR_BLEND_FOLLOW_MAINTEX_UV))
+        {
+            particleUVs.colorBlendUV = particleUVs.mainTexUV;
+        }
+        else
+        {
             float2 colorBlendUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_COLOR_BLEND_MAP,baseUVs);
-            particleUVs.colorBlendUV = ParticleUVCommonProcess(colorBlendUV,_ColorBlendMap_ST,_ColorBlendMapOffset.xy,_ColorBlendMapOffset.w);
+            
+            particleUVs.colorBlendUV = ParticleUVCommonProcess(colorBlendUV,_ColorBlendMap_ST,_ColorBlendMapOffset.xy,_ColorBlendVec.w);
+        }
         #endif
         #ifdef _COLOR_RAMP
             float2 colorRampMapUV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_RAMP_COLOR_MAP,baseUVs);
