@@ -1022,7 +1022,7 @@ namespace UnityEditor
                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeRampColorMap, 4, "颜色映射黑白图UV来源",
                         W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_RAMP_COLOR_MAP, 0,
                         _helper.GetProperty("_RampColorMap"));
-                    _helper.DrawVector4In2Line("_RampColorMapOffset", "颜色映射贴图偏移动画", true);
+                    _helper.DrawVector4In2Line("_RampColorMapOffset", "颜色映射贴图偏移速度", true);
                     _helper.DrawVector4Component("颜色映射贴图旋转", "_RampColorMapOffset", "w", true, 0f, 360f);
                     rampColorPropArr[0] = _helper.GetProperty("_RampColor0");
                     rampColorPropArr[1] = _helper.GetProperty("_RampColor1");
