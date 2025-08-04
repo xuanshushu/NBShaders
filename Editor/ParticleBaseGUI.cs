@@ -1188,15 +1188,15 @@ namespace UnityEditor
                                 {
                                     for (int i = 0; i < shaderFlags.Count; i++)
                                     {
-                                        if (dissolveRampModeProp.floatValue < 0.5f)
+                                        if (dissolveRampModeProp.floatValue > 0.5f)
                                         {
                                             shaderFlags[i].SetFlagBits(W9ParticleShaderFlags
-                                                .FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT);
+                                                .FLAG_BIT_PARTICLE_DISSOLVE_RAMP_MAP);
                                         }
                                         else
                                         {
                                             shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags
-                                                .FLAG_BIT_PARTICLE_DISSOLVE_RAMP_GRADIENT);
+                                                .FLAG_BIT_PARTICLE_DISSOLVE_RAMP_MAP);
                                         }
                                     }
                                 });
