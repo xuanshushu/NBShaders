@@ -239,6 +239,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutBit2MatCapToggle= 1 << 1;
     public const int foldOutBit2RampColor= 1 << 2;
     public const int foldOutBit2DissolveLine= 1 << 3;
+    public const int foldOutBit2BaseBackColor= 1 << 4;
 
 
     #region CustomDataCodes

@@ -52,6 +52,7 @@ namespace UnityEditor
             matEditor = materialEditor;
             _helper.Init(materialEditor, props, shaderFlags.ToArray(), mats);
 
+            _helper.DrawToolBar();
             EditorGUI.BeginChangeCheck();
 
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMeshOption, 3, GetAnimBoolIndex(3), "模式设置",
@@ -78,7 +79,6 @@ namespace UnityEditor
                 {
                     DoVertexStreamsArea(mats[0], m_RenderersUsingThisMaterial, 0); //填充stream和stremList
                     mats[0].EnableKeyword("_CUSTOMDATA");
-
                 }
                 else
                 {
@@ -96,22 +96,24 @@ namespace UnityEditor
                 }
 
                 DoAfterDraw();
-            }
-
-
-            //多选状态下同步ShaderFlag
-            if (mats.Count > 1)
-            {
-                for (int i = 1; i < mats.Count; i++)
+                
+                //多选状态下同步ShaderFlag
+                if (mats.Count > 1)
                 {
-                    mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId,
-                        mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId));
-                    mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId1,
-                        mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId1));
-                    mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId2,
-                        mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId2));
+                    for (int i = 1; i < mats.Count; i++)
+                    {
+                        mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId,
+                            mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId));
+                        mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId1,
+                            mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId1));
+                        mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId2,
+                            mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId2));
+                    }
                 }
             }
+
+
+        
 
             materialEditor.Repaint();
         }
@@ -312,15 +314,14 @@ namespace UnityEditor
                 _helper.DrawPopUp("深度写入强制控制", "_ForceZWriteToggle",_ForceZWriteToggleNames);
 
 
-
-                EditorGUILayout.BeginHorizontal();
-                _helper.DrawToggle("背面颜色", "_BaseBackColor_Toggle", W9ParticleShaderFlags.FLAG_BIT_PARTICLE_BACKCOLOR,
+                
+                _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2BaseBackColor,5,GetAnimBoolIndex(5),"背面颜色", "_BaseBackColor_Toggle", W9ParticleShaderFlags.FLAG_BIT_PARTICLE_BACKCOLOR,
                     drawBlock:
                     (isToggle) =>
                     {
-                        matEditor.ColorProperty(_helper.GetProperty("_BaseBackColor"), "");
+                        // matEditor.ColorProperty(_helper.GetProperty("_BaseBackColor"), "");
+                        _helper.ColorProperty("背面颜色","_BaseBackColor");
                     });
-                EditorGUILayout.EndHorizontal();
 
 
             }
