@@ -721,5 +721,5 @@
         }
     }
     
-    CustomEditor "ParticleBaseGUI"
+    CustomEditor "NBShaderEditor.ParticleBaseGUI"
 }

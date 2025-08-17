@@ -7,8 +7,9 @@ using UnityEngine.Rendering;
 using stencilTestHelper;
 using UnityEditor.AnimatedValues;
 using System.Reflection;
+using UnityEditor;
 
-namespace UnityEditor
+namespace NBShaderEditor
 {
     public class ParticleBaseGUI : ShaderGUI
     {
@@ -111,11 +112,8 @@ namespace UnityEditor
                     }
                 }
             }
-
-
-        
-
-            materialEditor.Repaint();
+            
+            // materialEditor.Repaint();//重绘也太卡了
         }
 
         int _uiEffectEnabled = -1; //0 false,1 true,-1 unKnow | MixedValue
@@ -390,7 +388,7 @@ namespace UnityEditor
         {
             Action drawAfterMainTex = () =>
             {
-                DrawColorChannelSelect("主贴图透明度通道", W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MAINTEX_ALPHA);
+                DrawColorChannelSelect("主贴图透明度通道", W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MAINTEX_ALPHA,3);
                 if (_meshSourceMode != MeshSourceMode.UIEffectSprite)
                 {
                     MaterialProperty textureProp = null;
@@ -417,12 +415,12 @@ namespace UnityEditor
 
                     _helper.DrawVector4In2Line("_BaseMapMaskMapOffset", "偏移速度", true);
                     _helper.DrawSlider("主贴图旋转", "_BaseMapUVRotation", 0f, 360f);
-                    matEditor.ShaderProperty(_helper.GetProperty("_BaseMapUVRotationSpeed"),"主贴图旋转速度");
+                    _helper.DrawFloat("主贴图旋转速度","_BaseMapUVRotationSpeed");
                 }
 
                 DrawNoiseAffectBlock(() =>
                 {
-                    _helper.DrawSlider("主贴图扭曲强度", "_TexDistortion_intensity", -1.0f, 1.0f);
+                    _helper.DrawSlider("主贴图扭曲强度控制", "_TexDistortion_intensity", -1.0f, 1.0f);
 
                 });
 
@@ -613,8 +611,8 @@ namespace UnityEditor
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2MatCapToggle, 5, GetAnimBoolIndex(5),
                     "MatCap模拟材质", "_MatCapToggle", shaderKeyword: "_MATCAP", drawBlock: isMatCapToggle =>
                     {
-                        _helper.DrawTexture("MatCap图", "_MatCapTex", drawScaleOffset: false);
-                        matEditor.ColorProperty(_helper.GetProperty("_MatCapColor"), "MatCap颜色");
+                        _helper.DrawTexture("MatCap图", "_MatCapTex",colorPropertyName:"_MatCapColor", drawScaleOffset: false);
+                        // matEditor.ColorProperty(_helper.GetProperty("_MatCapColor"), "MatCap颜色");
                         _helper.DrawVector4Component("MatCap相加到相乘过渡", "_MatCapInfo", "x", true);
                     });
             }
@@ -717,7 +715,7 @@ namespace UnityEditor
                                                 flagIndex: 2,
                                                 drawBlock: theMaskMap2Texture =>
                                                 {
-                                                    DrawColorChannelSelect("遮罩通道选择",
+                                                    DrawColorChannelSelect("遮罩2通道选择",
                                                         W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2);
                                                 });
                                         }
@@ -779,7 +777,7 @@ namespace UnityEditor
                                                 flagIndex: 2,
                                                 drawBlock: theMaskMap2Texture =>
                                                 {
-                                                    DrawColorChannelSelect("遮罩通道选择",
+                                                    DrawColorChannelSelect("遮罩3通道选择",
                                                         W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3);
                                                 });
                                         }
@@ -1318,9 +1316,10 @@ namespace UnityEditor
                         drawBlock:
                         isToggle =>
                         {
-                            if (isToggle.hasMixedValue && isToggle.floatValue < 0.5f)
+                            if (!isToggle.hasMixedValue && isToggle.floatValue < 0.5f)
                             {
-                                matEditor.ShaderProperty(_helper.GetProperty("_VertexOffset_CustomDir"), "顶点偏移本地方向");
+                                // matEditor.ShaderProperty(_helper.GetProperty("_VertexOffset_CustomDir"), "顶点偏移本地方向");
+                                _helper.DrawVector4XYZComponet("顶点偏移本地方向","_VertexOffset_CustomDir");
                             }
                         });
                     _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1VertexOffsetMask, 4, GetAnimBoolIndex(4),
@@ -1642,12 +1641,12 @@ namespace UnityEditor
 
         void DrawNoiseAffectBlock(Action drawBlock)
         {
-            if (_noiseEnabled >= 0)
-            {
-                EditorGUI.BeginDisabledGroup(_noiseEnabled == 0);
-                drawBlock();
-                EditorGUI.EndDisabledGroup();
-            }
+            
+            EditorGUI.BeginDisabledGroup(_noiseEnabled == 0);
+            EditorGUI.showMixedValue = _noiseEnabled < 0;
+            drawBlock();
+            EditorGUI.showMixedValue = false;
+            EditorGUI.EndDisabledGroup();
         }
 
         public string[] blendModeNames =
@@ -2356,19 +2355,37 @@ namespace UnityEditor
             // if (mats.Count != 1) return; //仅单选触发
             
             if(_meshSourceModeIsParticle <=0 ) return;
+            (string, string) nameTuple = (label, "");
             //-------------这里需要处理多选情况--------------
             EditorGUI.showMixedValue = CustomDataHasMixedValue(dataBitPos, dataIndex);
             W9ParticleShaderFlags.CutomDataComponent component = shaderFlags[0].GetCustomDataFlag(dataBitPos, dataIndex);
             EditorGUI.BeginChangeCheck();
+            EditorGUILayout.BeginHorizontal();
             component = (W9ParticleShaderFlags.CutomDataComponent)EditorGUILayout.Popup(new GUIContent(label), (int)component, _customDataOptions);
-            if (EditorGUI.EndChangeCheck())
+            EditorGUI.showMixedValue = false;
+            Action customDataDrawEndChangeCheck = () =>
             {
                 for (int i = 0; i < shaderFlags.Count; i++)
                 {
                     shaderFlags[i].SetCustomDataFlag(component,dataBitPos,dataIndex);
                 }
+                _helper.ResetTool.CheckOnValueChange(nameTuple);
+            };
+            if (EditorGUI.EndChangeCheck())
+            {
+                customDataDrawEndChangeCheck();
             }
-            EditorGUI.showMixedValue = false;
+            _helper.ResetTool.DrawResetModifyButton(nameTuple,
+                resetCallBack:()=>
+                {
+                    component = 0;
+                    customDataDrawEndChangeCheck();
+                },onValueChangedCallBack:customDataDrawEndChangeCheck,
+                checkHasModifyOnValueChange: () => shaderFlags[0].GetCustomDataFlag(dataBitPos, dataIndex)!= 0 ,
+                checkHasMixedValueOnValueChange:()=>CustomDataHasMixedValue(dataBitPos, dataIndex));
+            EditorGUILayout.EndHorizontal();
+            _helper.ResetTool.EndResetModifyButtonScope();
+            
         }
 
     
@@ -2418,6 +2435,7 @@ namespace UnityEditor
             }
             bool uvModeHasMixedValue = UvModeHasMixedValue(uvModeBitPos, uvModeFlagIndex);
             EditorGUI.showMixedValue = uvModeHasMixedValue;
+            (string, string) wrapModeNameTuple = (label, "");
             
             EditorGUILayout.BeginHorizontal();
             
@@ -2429,14 +2447,20 @@ namespace UnityEditor
             bool isChangeUVMode = false;
             EditorGUI.BeginChangeCheck();
             W9ParticleShaderFlags.UVMode uvMode = shaderFlags[0].GetUVMode(uvModeBitPos, uvModeFlagIndex);
-            uvMode = (W9ParticleShaderFlags.UVMode) EditorGUI.Popup(popUpRect, (int)uvMode, _uvModeNames);
-            if (EditorGUI.EndChangeCheck())
+
+            Action drawUVModeEndChangeCheck = () =>
             {
                 isChangeUVMode = true;
                 for (int i = 0; i < shaderFlags.Count; i++)
                 {
                     shaderFlags[i].SetUVMode(uvMode, uvModeBitPos, uvModeFlagIndex);
                 }
+                _helper.ResetTool.CheckOnValueChange(wrapModeNameTuple);
+            };
+            uvMode = (W9ParticleShaderFlags.UVMode) EditorGUI.Popup(popUpRect, (int)uvMode, _uvModeNames);
+            if (EditorGUI.EndChangeCheck())
+            {
+                drawUVModeEndChangeCheck();
             }
             
             bool foldOutState = shaderFlags[0].CheckFlagBits(foldOutFlagBit, index: foldOutFlagIndex);
@@ -2465,9 +2489,17 @@ namespace UnityEditor
             }
             EditorGUI.LabelField(labelRect,label);
             
-
-            
+            _helper.ResetTool.DrawResetModifyButton(wrapModeNameTuple,
+            resetCallBack: () =>
+            {
+                uvMode = 0;
+                drawUVModeEndChangeCheck();
+            },onValueChangedCallBack: drawUVModeEndChangeCheck,checkHasModifyOnValueChange: () =>
+            {
+                return shaderFlags[0].GetUVMode(uvModeBitPos, uvModeFlagIndex) != 0;
+            },checkHasMixedValueOnValueChange:()=>UvModeHasMixedValue(uvModeBitPos, uvModeFlagIndex));
             EditorGUILayout.EndHorizontal();
+            _helper.ResetTool.EndResetModifyButtonScope();
             
           
 
@@ -2509,40 +2541,41 @@ namespace UnityEditor
                                         //TODO:如果所有UVMode都没有开启，需要都Clear。
                                     }
                                 }
-                            });
+                            },isSharedGlobalParent:true);
                         break;
                     case W9ParticleShaderFlags.UVMode.PolarOrTwirl:
-                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitTwril,3,GetAnimBoolIndex(3),"旋转扭曲","_UTwirlEnabled",flagBitsName:W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UTWIRL_ON,drawBlock:(isToggle) =>{
+                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitTwril,3,GetAnimBoolIndex(3),"旋转扭曲","_UTwirlEnabled",flagBitsName:W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UTWIRL_ON,isSharedGlobalParent:true,drawBlock:(isToggle) =>{
                                 _helper.DrawVector4In2Line("_TWParameter","旋转扭曲中心",true);
                                 _helper.DrawFloat("旋转扭曲强度","_TWStrength");
                         });
 
-                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitPolar,3,GetAnimBoolIndex(3),"极坐标", "_PolarCoordinatesEnabled",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_POLARCOORDINATES_ON,drawBlock:(isToggle) =>{
+                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitPolar,3,GetAnimBoolIndex(3),"极坐标", "_PolarCoordinatesEnabled",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_POLARCOORDINATES_ON,isSharedGlobalParent:true,drawBlock:(isToggle) =>{
                                 // _helper.DrawToggle("极坐标只影响特殊功能","_PolarCordinateOnlySpecialFunciton_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC);
                                 _helper.DrawVector4In2Line("_PCCenter","极坐标中心",true);
                                 _helper.DrawVector4Component("极坐标强度","_PCCenter","z",true,0f,1f);
                         });
                         break;
                     case W9ParticleShaderFlags.UVMode.Cylinder:
-                        EditorGUILayout.LabelField("圆柱模式消耗比较大，慎用");
-                        _helper.DrawVector4XYZComponet("圆柱坐标旋转","_CylinderUVRotate");
-                        _helper.DrawVector4XYZComponet("圆柱坐标偏移","_CylinderUVPosOffset");
-                        Matrix4x4 cylinderMatrix =
-                            Matrix4x4.Translate(_helper.GetProperty("_CylinderUVPosOffset").vectorValue) *
-                            Matrix4x4.Rotate(Quaternion.Euler(_helper.GetProperty("_CylinderUVRotate").vectorValue));
-                        _helper.GetProperty("_CylinderMatrix0").vectorValue =cylinderMatrix.GetRow(0);
-                        _helper.GetProperty("_CylinderMatrix1").vectorValue =cylinderMatrix.GetRow(1);
-                        _helper.GetProperty("_CylinderMatrix2").vectorValue =cylinderMatrix.GetRow(2);
-                        _helper.GetProperty("_CylinderMatrix3").vectorValue =cylinderMatrix.GetRow(3);
-
-                        if (!uvModeHasMixedValue)
-                        {
-                            for (int i = 0; i < shaderFlags.Count; i++)
-                            {
-                                shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CYLINDER_CORDINATE,index:1);
-                                //TODO:如果所有UVMode都没有开启，需要都Clear。
-                            }
-                        }
+                        EditorGUILayout.LabelField("圆柱坐标模式尚未开发完成！");
+                        // EditorGUILayout.LabelField("圆柱模式消耗比较大，慎用");
+                        // _helper.DrawVector4XYZComponet("圆柱坐标旋转","_CylinderUVRotate");
+                        // _helper.DrawVector4XYZComponet("圆柱坐标偏移","_CylinderUVPosOffset");
+                        // Matrix4x4 cylinderMatrix =
+                        //     Matrix4x4.Translate(_helper.GetProperty("_CylinderUVPosOffset").vectorValue) *
+                        //     Matrix4x4.Rotate(Quaternion.Euler(_helper.GetProperty("_CylinderUVRotate").vectorValue));
+                        // _helper.GetProperty("_CylinderMatrix0").vectorValue =cylinderMatrix.GetRow(0);
+                        // _helper.GetProperty("_CylinderMatrix1").vectorValue =cylinderMatrix.GetRow(1);
+                        // _helper.GetProperty("_CylinderMatrix2").vectorValue =cylinderMatrix.GetRow(2);
+                        // _helper.GetProperty("_CylinderMatrix3").vectorValue =cylinderMatrix.GetRow(3);
+                        //
+                        // if (!uvModeHasMixedValue)
+                        // {
+                        //     for (int i = 0; i < shaderFlags.Count; i++)
+                        //     {
+                        //         shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CYLINDER_CORDINATE,index:1);
+                        //         //TODO:如果所有UVMode都没有开启，需要都Clear。
+                        //     }
+                        // }
                         break;
                 }
                 EditorGUILayout.EndFadeGroup();
@@ -2594,22 +2627,37 @@ namespace UnityEditor
 
         private string[] _colorChannelNames = { "R", "G", "B", "A" };
 
-        public void DrawColorChannelSelect(string label, int colorChannelBitPos)
+        public void DrawColorChannelSelect(string label, int colorChannelBitPos,int defaultChannel = 0)
         {
-            EditorGUI.showMixedValue = ColorChannelHasMixedValue(colorChannelBitPos);
+            bool hasMixedValue = ColorChannelHasMixedValue(colorChannelBitPos);
+            EditorGUI.showMixedValue = hasMixedValue;
+            (string, string) nameTuple = (label, "");
 
             W9ParticleShaderFlags.ColorChannel chanel = shaderFlags[0].GetColorChanel(colorChannelBitPos);
             EditorGUI.BeginChangeCheck();
+            EditorGUILayout.BeginHorizontal();
             int index = EditorGUILayout.Popup(label, (int)chanel,
                 _colorChannelNames);
-            if (EditorGUI.EndChangeCheck())
+            Action colorChannelOnEndChangeCheck = () =>
             {
                 for (int i = 0; i < shaderFlags.Count; i++)
                 {
                     shaderFlags[i].SetColorChanel((W9ParticleShaderFlags.ColorChannel)index,colorChannelBitPos);
                 }
+                _helper.ResetTool.CheckOnValueChange(nameTuple);
+            };
+            if (EditorGUI.EndChangeCheck())
+            {
+                colorChannelOnEndChangeCheck();
             }
             EditorGUI.showMixedValue = false;
+            _helper.ResetTool.DrawResetModifyButton(nameTuple,
+                resetCallBack: () => { index = defaultChannel; }, 
+                onValueChangedCallBack: colorChannelOnEndChangeCheck,
+                checkHasModifyOnValueChange: () => { return shaderFlags[0].GetColorChanel(colorChannelBitPos) != (W9ParticleShaderFlags.ColorChannel)defaultChannel;},
+                checkHasMixedValueOnValueChange:()=>ColorChannelHasMixedValue(colorChannelBitPos));
+            EditorGUILayout.EndHorizontal();
+            _helper.ResetTool.EndResetModifyButtonScope();
         }
 
         int GetAnimBoolIndex(int foldOutFlagIndex)
