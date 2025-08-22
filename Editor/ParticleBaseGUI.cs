@@ -112,8 +112,6 @@ namespace NBShaderEditor
                     }
                 }
             }
-            
-            // materialEditor.Repaint();//重绘也太卡了
         }
 
         int _uiEffectEnabled = -1; //0 false,1 true,-1 unKnow | MixedValue
@@ -594,7 +592,7 @@ namespace NBShaderEditor
                             drawScaleOffset: !bumpMapFromMainTexUV, drawBlock:
                             theBumpmap =>
                             {
-                                if (!bumpMapFromMainTexUV)
+                                if (!bumpMapFromMainTexUV || _helper.ResetTool.IsInitResetData)
                                 {
                                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeBumpTex, 4, "法线贴图UV来源",
                                         W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_BUMPMAP, 0, theBumpmap);
@@ -631,33 +629,49 @@ namespace NBShaderEditor
                     _helper.DrawPopUp("遮罩模式", "_MaskMapGradientToggle", _maskMapModeNames,
                         drawBlock: maskMapModeProp =>
                         {
-                            if (!maskMapModeProp.hasMixedValue)
+                            Action drawMaskTexturePart = () =>
                             {
-                                //绘制贴图
-                                if (maskMapModeProp.floatValue < 0.5f)
+                                _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitMaskMap, 3,
+                                    GetAnimBoolIndex(3), "遮罩", "_MaskMap", drawWrapMode: true,
+                                    flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP, flagIndex: 2,
+                                    drawBlock: theMaskMap =>
+                                    {
+                                        DrawColorChannelSelect("遮罩通道选择", W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP1);
+                                    });
+                            };
+                            Action drawMaskGradientPart = () =>
+                            {
+                                maskMapGradientPropArr[0] = _helper.GetProperty("_MaskMapGradientFloat0");
+                                maskMapGradientPropArr[1] = _helper.GetProperty("_MaskMapGradientFloat1");
+                                maskMapGradientPropArr[2] = _helper.GetProperty("_MaskMapGradientFloat2");
+                                _helper.DrawGradient(maskMapGradient, false, ColorSpace.Gamma, "遮罩渐变", 6,
+                                    "_MaskMapGradientCount", alphaProperties: maskMapGradientPropArr);
+                                _helper.TextureScaleOffsetProperty("_MaskMap");
+                                _helper.DrawWrapMode("遮罩", W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP,
+                                    flagIndex: 2);
+                            };
+                            if (_helper.ResetTool.IsInitResetData)
+                            {
+                                drawMaskTexturePart();
+                                drawMaskGradientPart();
+                            }
+                            else
+                            {
+                                if (!maskMapModeProp.hasMixedValue)
                                 {
-                                    _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitMaskMap, 3,
-                                        GetAnimBoolIndex(3), "遮罩贴图", "_MaskMap", drawWrapMode: true,
-                                        flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP, flagIndex: 2,
-                                        drawBlock: theMaskMap =>
-                                        {
-                                            DrawColorChannelSelect("遮罩通道选择", W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP1);
-                                        });
-                                }
-                                else
-                                {
-                                    maskMapGradientPropArr[0] = _helper.GetProperty("_MaskMapGradientFloat0");
-                                    maskMapGradientPropArr[1] = _helper.GetProperty("_MaskMapGradientFloat1");
-                                    maskMapGradientPropArr[2] = _helper.GetProperty("_MaskMapGradientFloat2");
-                                    _helper.DrawGradient(ref maskMapGradient, false, ColorSpace.Gamma, "遮罩渐变", 6,
-                                        "_MaskMapGradientCount", alphaProperties: maskMapGradientPropArr);
-                                    matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap"));
-                                    _helper.DrawWrapMode("遮罩UV", W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP,
-                                        flagIndex: 2);
+                                    //绘制贴图
+                                    if (maskMapModeProp.floatValue < 0.5f)
+                                    {
+                                        drawMaskTexturePart();
+                                    }
+                                    else
+                                    {
+                                        drawMaskGradientPart();
+                                    }
                                 }
                             }
 
-                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMaskMap, 4, "遮罩贴图UV来源",
+                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMaskMap, 4, "遮罩UV来源",
                                 W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP, 0);
                             DrawCustomDataSelect("Mask图X轴偏移自定义曲线",
                                 W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X, 0);
@@ -706,31 +720,46 @@ namespace NBShaderEditor
                             _helper.DrawPopUp("遮罩2模式", "_MaskMap2GradientToggle", _maskMapModeNames,
                                 drawBlock: maskMap2GradientModeProp =>
                                 {
-                                    if (!maskMap2GradientModeProp.hasMixedValue)
+                                    Action drawMask2TexturePart = () =>
                                     {
-                                        if (maskMap2GradientModeProp.floatValue < 0.5f)
+                                        _helper.DrawTexture("遮罩2贴图", "_MaskMap2", drawWrapMode: true,
+                                            wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2,
+                                            flagIndex: 2,
+                                            drawBlock: theMaskMap2Texture =>
+                                            {
+                                                DrawColorChannelSelect("遮罩2通道选择",
+                                                    W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2);
+                                            });
+                                    };
+                                    Action drawMask2GradientPart = () =>
+                                    {
+                                        maskMap2GradientPropArr[0] = _helper.GetProperty("_MaskMap2GradientFloat0");
+                                        maskMap2GradientPropArr[1] = _helper.GetProperty("_MaskMap2GradientFloat1");
+                                        maskMap2GradientPropArr[2] = _helper.GetProperty("_MaskMap2GradientFloat2");
+                                        _helper.DrawGradient(maskMap2Gradient, false, ColorSpace.Gamma,
+                                            "遮罩2渐变(UV纵向)", 6, "_MaskMap2GradientCount",
+                                            alphaProperties: maskMap2GradientPropArr);
+                                        matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap2"));
+                                        _helper.DrawWrapMode("遮罩2UV",
+                                            W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2, flagIndex: 2);
+                                    };
+                                    if (_helper.ResetTool.IsInitResetData)
+                                    {
+                                        drawMask2TexturePart();
+                                        drawMask2GradientPart();
+                                    }
+                                    else
+                                    {
+                                        if (!maskMap2GradientModeProp.hasMixedValue)
                                         {
-                                            _helper.DrawTexture("遮罩2贴图", "_MaskMap2", drawWrapMode: true,
-                                                wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2,
-                                                flagIndex: 2,
-                                                drawBlock: theMaskMap2Texture =>
-                                                {
-                                                    DrawColorChannelSelect("遮罩2通道选择",
-                                                        W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP2);
-                                                });
-                                        }
-                                        else
-                                        {
-                                            maskMap2GradientPropArr[0] = _helper.GetProperty("_MaskMap2GradientFloat0");
-                                            maskMap2GradientPropArr[1] = _helper.GetProperty("_MaskMap2GradientFloat1");
-                                            maskMap2GradientPropArr[2] = _helper.GetProperty("_MaskMap2GradientFloat2");
-                                            _helper.DrawGradient(ref maskMap2Gradient, false, ColorSpace.Gamma,
-                                                "遮罩2渐变(UV纵向)", 6, "_MaskMap2GradientCount",
-                                                alphaProperties: maskMap2GradientPropArr);
-                                            matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap2"));
-                                            _helper.DrawWrapMode("遮罩2UV",
-                                                W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP2, flagIndex: 2);
-
+                                            if (maskMap2GradientModeProp.floatValue < 0.5f)
+                                            {
+                                                drawMask2TexturePart();
+                                            }
+                                            else
+                                            {
+                                                drawMask2GradientPart();
+                                            }
                                         }
                                     }
 
@@ -768,31 +797,46 @@ namespace NBShaderEditor
                             _helper.DrawPopUp("遮罩3模式", "_MaskMap3GradientToggle", _maskMapModeNames,
                                 drawBlock: maskMap3GradientModeProp =>
                                 {
-                                    if (!maskMap3GradientModeProp.hasMixedValue)
+                                    Action drawMask3TexturePart = () =>
                                     {
-                                        if (maskMap3GradientModeProp.floatValue < 0.5f)
+                                        _helper.DrawTexture("遮罩3贴图", "_MaskMap3", drawWrapMode: true,
+                                            wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3,
+                                            flagIndex: 2,
+                                            drawBlock: theMaskMap2Texture =>
+                                            {
+                                                DrawColorChannelSelect("遮罩3通道选择",
+                                                    W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3);
+                                            });
+                                    };
+                                    Action drawMask3GradientPart = () =>
+                                    {
+                                        maskMap3GradientPropArr[0] = _helper.GetProperty("_MaskMap3GradientFloat0");
+                                        maskMap3GradientPropArr[1] = _helper.GetProperty("_MaskMap3GradientFloat1");
+                                        maskMap3GradientPropArr[2] = _helper.GetProperty("_MaskMap3GradientFloat2");
+                                        _helper.DrawGradient(maskMap3Gradient, false, ColorSpace.Gamma,
+                                            "遮罩3渐变(UV横向)", 6, "_MaskMap3GradientCount",
+                                            alphaProperties: maskMap3GradientPropArr);
+                                        matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap3"));
+                                        _helper.DrawWrapMode("遮罩3UV",
+                                            W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3, flagIndex: 2);
+                                    };
+                                    if (_helper.ResetTool.IsInitResetData)
+                                    {
+                                        drawMask3TexturePart();
+                                        drawMask3GradientPart();
+                                    }
+                                    else
+                                    {
+                                        if (!maskMap3GradientModeProp.hasMixedValue)
                                         {
-                                            _helper.DrawTexture("遮罩3贴图", "_MaskMap3", drawWrapMode: true,
-                                                wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3,
-                                                flagIndex: 2,
-                                                drawBlock: theMaskMap2Texture =>
-                                                {
-                                                    DrawColorChannelSelect("遮罩3通道选择",
-                                                        W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_MASKMAP3);
-                                                });
-                                        }
-                                        else
-                                        {
-                                            maskMap3GradientPropArr[0] = _helper.GetProperty("_MaskMap3GradientFloat0");
-                                            maskMap3GradientPropArr[1] = _helper.GetProperty("_MaskMap3GradientFloat1");
-                                            maskMap3GradientPropArr[2] = _helper.GetProperty("_MaskMap3GradientFloat2");
-                                            _helper.DrawGradient(ref maskMap3Gradient, false, ColorSpace.Gamma,
-                                                "遮罩3渐变(UV横向)", 6, "_MaskMap3GradientCount",
-                                                alphaProperties: maskMap3GradientPropArr);
-                                            matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_MaskMap3"));
-                                            _helper.DrawWrapMode("遮罩3UV",
-                                                W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_MASKMAP3, flagIndex: 2);
-
+                                            if (maskMap3GradientModeProp.floatValue < 0.5f)
+                                            {
+                                                drawMask3TexturePart();
+                                            }
+                                            else
+                                            {
+                                                drawMask3GradientPart();
+                                            }
                                         }
                                     }
 
@@ -1032,7 +1076,7 @@ namespace NBShaderEditor
                     rampColorAlphaPropArr[0] = _helper.GetProperty("_RampColorAlpha0");
                     rampColorAlphaPropArr[1] = _helper.GetProperty("_RampColorAlpha1");
                     rampColorAlphaPropArr[2] = _helper.GetProperty("_RampColorAlpha2");
-                    _helper.DrawGradient(ref rampColorGradient, true, ColorSpace.Gamma, "映射颜色", 6, "_RampColorCount",
+                    _helper.DrawGradient(rampColorGradient, true, ColorSpace.Gamma, "映射颜色", 6, "_RampColorCount",
                         rampColorPropArr, rampColorAlphaPropArr);
                     _helper.DrawPopUp("Ramp颜色混合模式", "_RampColorBlendMode", rampColorBlendMode, drawOnValueChangedBlock:
                         modeProp =>
@@ -1156,7 +1200,7 @@ namespace NBShaderEditor
                                             dissolveRampAlphaPropArr[0] = _helper.GetProperty("_DissolveRampAlpha0");
                                             dissolveRampAlphaPropArr[1] = _helper.GetProperty("_DissolveRampAlpha1");
                                             dissolveRampAlphaPropArr[2] = _helper.GetProperty("_DissolveRampAlpha2");
-                                            _helper.DrawGradient(ref dissolveRampGradient, true, ColorSpace.Gamma,
+                                            _helper.DrawGradient(dissolveRampGradient, true, ColorSpace.Gamma,
                                                 "Ramp颜色", 6, "_DissolveRampCount", dissolveRampColorPropArr,
                                                 dissolveRampAlphaPropArr);
                                             matEditor.TextureScaleOffsetProperty(
@@ -2375,7 +2419,7 @@ namespace NBShaderEditor
             {
                 customDataDrawEndChangeCheck();
             }
-            _helper.ResetTool.DrawResetModifyButton(nameTuple,
+            _helper.ResetTool.DrawResetModifyButton(new Rect(),nameTuple,
                 resetCallBack:()=>
                 {
                     component = 0;
@@ -2489,7 +2533,7 @@ namespace NBShaderEditor
             }
             EditorGUI.LabelField(labelRect,label);
             
-            _helper.ResetTool.DrawResetModifyButton(wrapModeNameTuple,
+            _helper.ResetTool.DrawResetModifyButton(new Rect(),wrapModeNameTuple,
             resetCallBack: () =>
             {
                 uvMode = 0;
@@ -2516,68 +2560,87 @@ namespace NBShaderEditor
                 {
                     EditorGUILayout.LabelField("以下设置材质内通用:",EditorStyles.boldLabel);
                 }
-                
-                switch (uvMode)
-                {
-                    case W9ParticleShaderFlags.UVMode.SpecialUVChannel:
-                        _helper.DrawPopUp("特殊UV通道选择","_SpecialUVChannelMode",  Enum.GetNames(typeof(SpecialUVChannelMode)),
-                            drawOnValueChangedBlock:
-                            specialUVChannelMode =>
-                            {
-                                //在OnValueChange的时候。就已经是一起Set了。
-                                SpecialUVChannelMode spUVMode = (SpecialUVChannelMode)specialUVChannelMode.floatValue;
-                                for (int i = 0; i < shaderFlags.Count; i++)
-                                {
-                                    switch (spUVMode)
-                                    {
-                                        case SpecialUVChannelMode.UV2_Texcoord1:
-                                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD1,index:1);
-                                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD2,index:1);
-                                            break;
-                                        case SpecialUVChannelMode.UV3_Texcoord2:
-                                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD1,index:1);
-                                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD2,index:1);
-                                            break;
-                                        //TODO:如果所有UVMode都没有开启，需要都Clear。
-                                    }
-                                }
-                            },isSharedGlobalParent:true);
-                        break;
-                    case W9ParticleShaderFlags.UVMode.PolarOrTwirl:
-                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitTwril,3,GetAnimBoolIndex(3),"旋转扭曲","_UTwirlEnabled",flagBitsName:W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UTWIRL_ON,isSharedGlobalParent:true,drawBlock:(isToggle) =>{
-                                _helper.DrawVector4In2Line("_TWParameter","旋转扭曲中心",true);
-                                _helper.DrawFloat("旋转扭曲强度","_TWStrength");
-                        });
 
-                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitPolar,3,GetAnimBoolIndex(3),"极坐标", "_PolarCoordinatesEnabled",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_POLARCOORDINATES_ON,isSharedGlobalParent:true,drawBlock:(isToggle) =>{
-                                // _helper.DrawToggle("极坐标只影响特殊功能","_PolarCordinateOnlySpecialFunciton_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC);
-                                _helper.DrawVector4In2Line("_PCCenter","极坐标中心",true);
-                                _helper.DrawVector4Component("极坐标强度","_PCCenter","z",true,0f,1f);
-                        });
-                        break;
-                    case W9ParticleShaderFlags.UVMode.Cylinder:
-                        EditorGUILayout.LabelField("圆柱坐标模式尚未开发完成！");
-                        // EditorGUILayout.LabelField("圆柱模式消耗比较大，慎用");
-                        // _helper.DrawVector4XYZComponet("圆柱坐标旋转","_CylinderUVRotate");
-                        // _helper.DrawVector4XYZComponet("圆柱坐标偏移","_CylinderUVPosOffset");
-                        // Matrix4x4 cylinderMatrix =
-                        //     Matrix4x4.Translate(_helper.GetProperty("_CylinderUVPosOffset").vectorValue) *
-                        //     Matrix4x4.Rotate(Quaternion.Euler(_helper.GetProperty("_CylinderUVRotate").vectorValue));
-                        // _helper.GetProperty("_CylinderMatrix0").vectorValue =cylinderMatrix.GetRow(0);
-                        // _helper.GetProperty("_CylinderMatrix1").vectorValue =cylinderMatrix.GetRow(1);
-                        // _helper.GetProperty("_CylinderMatrix2").vectorValue =cylinderMatrix.GetRow(2);
-                        // _helper.GetProperty("_CylinderMatrix3").vectorValue =cylinderMatrix.GetRow(3);
-                        //
-                        // if (!uvModeHasMixedValue)
-                        // {
-                        //     for (int i = 0; i < shaderFlags.Count; i++)
-                        //     {
-                        //         shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CYLINDER_CORDINATE,index:1);
-                        //         //TODO:如果所有UVMode都没有开启，需要都Clear。
-                        //     }
-                        // }
-                        break;
+                Action drawSpecialUVChannel = () =>
+                {
+                    _helper.DrawPopUp("特殊UV通道选择","_SpecialUVChannelMode",  Enum.GetNames(typeof(SpecialUVChannelMode)),
+                        drawOnValueChangedBlock:
+                        specialUVChannelMode =>
+                        {
+                            //在OnValueChange的时候。就已经是一起Set了。
+                            SpecialUVChannelMode spUVMode = (SpecialUVChannelMode)specialUVChannelMode.floatValue;
+                            for (int i = 0; i < shaderFlags.Count; i++)
+                            {
+                                switch (spUVMode)
+                                {
+                                    case SpecialUVChannelMode.UV2_Texcoord1:
+                                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD1,index:1);
+                                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD2,index:1);
+                                        break;
+                                    case SpecialUVChannelMode.UV3_Texcoord2:
+                                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD1,index:1);
+                                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_USE_TEXCOORD2,index:1);
+                                        break;
+                                    //TODO:如果所有UVMode都没有开启，需要都Clear。
+                                }
+                            }
+                        },isSharedGlobalParent:true);
+                };
+
+                Action drawPolarOrTwirl = () =>
+                {
+                    _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitTwril,3,GetAnimBoolIndex(3),"旋转扭曲","_UTwirlEnabled",flagBitsName:W9ParticleShaderFlags.FLAG_BIT_PARTICLE_UTWIRL_ON,isSharedGlobalParent:true,drawBlock:(isToggle) =>{
+                        _helper.DrawVector4In2Line("_TWParameter","旋转扭曲中心",true);
+                        _helper.DrawFloat("旋转扭曲强度","_TWStrength");
+                    });
+
+                    _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitPolar,3,GetAnimBoolIndex(3),"极坐标", "_PolarCoordinatesEnabled",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_POLARCOORDINATES_ON,isSharedGlobalParent:true,drawBlock:(isToggle) =>{
+                        // _helper.DrawToggle("极坐标只影响特殊功能","_PolarCordinateOnlySpecialFunciton_Toggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_PC_ONLYSPECIALFUNC);
+                        _helper.DrawVector4In2Line("_PCCenter","极坐标中心",true);
+                        _helper.DrawVector4Component("极坐标强度","_PCCenter","z",true,0f,1f);
+                    });
+                };
+
+                if (_helper.ResetTool.IsInitResetData)
+                {
+                    drawSpecialUVChannel();
+                    drawPolarOrTwirl();
                 }
+                else
+                {
+                    switch (uvMode)
+                    {
+                        case W9ParticleShaderFlags.UVMode.SpecialUVChannel:
+                            drawSpecialUVChannel();
+                            break;
+                        case W9ParticleShaderFlags.UVMode.PolarOrTwirl:
+                            drawPolarOrTwirl();
+                            break;
+                        case W9ParticleShaderFlags.UVMode.Cylinder:
+                            EditorGUILayout.LabelField("圆柱坐标模式尚未开发完成！");
+                            // EditorGUILayout.LabelField("圆柱模式消耗比较大，慎用");
+                            // _helper.DrawVector4XYZComponet("圆柱坐标旋转","_CylinderUVRotate");
+                            // _helper.DrawVector4XYZComponet("圆柱坐标偏移","_CylinderUVPosOffset");
+                            // Matrix4x4 cylinderMatrix =
+                            //     Matrix4x4.Translate(_helper.GetProperty("_CylinderUVPosOffset").vectorValue) *
+                            //     Matrix4x4.Rotate(Quaternion.Euler(_helper.GetProperty("_CylinderUVRotate").vectorValue));
+                            // _helper.GetProperty("_CylinderMatrix0").vectorValue =cylinderMatrix.GetRow(0);
+                            // _helper.GetProperty("_CylinderMatrix1").vectorValue =cylinderMatrix.GetRow(1);
+                            // _helper.GetProperty("_CylinderMatrix2").vectorValue =cylinderMatrix.GetRow(2);
+                            // _helper.GetProperty("_CylinderMatrix3").vectorValue =cylinderMatrix.GetRow(3);
+                            //
+                            // if (!uvModeHasMixedValue)
+                            // {
+                            //     for (int i = 0; i < shaderFlags.Count; i++)
+                            //     {
+                            //         shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_CYLINDER_CORDINATE,index:1);
+                            //         //TODO:如果所有UVMode都没有开启，需要都Clear。
+                            //     }
+                            // }
+                            break;
+                    }
+                }
+
                 EditorGUILayout.EndFadeGroup();
                 EditorGUI.indentLevel--;
             }
@@ -2651,7 +2714,7 @@ namespace NBShaderEditor
                 colorChannelOnEndChangeCheck();
             }
             EditorGUI.showMixedValue = false;
-            _helper.ResetTool.DrawResetModifyButton(nameTuple,
+            _helper.ResetTool.DrawResetModifyButton(new Rect(),nameTuple,
                 resetCallBack: () => { index = defaultChannel; }, 
                 onValueChangedCallBack: colorChannelOnEndChangeCheck,
                 checkHasModifyOnValueChange: () => { return shaderFlags[0].GetColorChanel(colorChannelBitPos) != (W9ParticleShaderFlags.ColorChannel)defaultChannel;},

@@ -125,17 +125,17 @@
     	
     	_MaskMapGradientToggle("遮罩渐变模式",Float) = 0
     	_MaskMapGradientCount("颜色映射数量",Integer) = 2
-    	_MaskMapGradientFloat0("x:MaskAlpha0,y:Pos0,z:MaskAlpha1,w:Pos1",Vector) = (1,0,1,1)
+    	_MaskMapGradientFloat0("x:MaskAlpha0,y:Pos0,z:MaskAlpha1,w:Pos1",Vector) = (0,0,1,1)
     	_MaskMapGradientFloat1("x:MaskAlpha2,y:Pos2,z:MaskAlpha3,w:Pos3",Vector) = (1,0,1,1)
     	_MaskMapGradientFloat2("x:MaskAlpha4,y:Pos4,z:MaskAlpha5,w:Pos5",Vector) = (1,0,1,1)
     	_MaskMap2GradientToggle("遮罩2渐变模式",Float) = 0
     	_MaskMap2GradientCount("颜色映射数量",Integer) = 2
-    	_MaskMap2GradientFloat0("x:Mask2Alpha0,y:Pos0,z:Mask2Alpha1,w:Pos1",Vector) = (1,0,1,1)
+    	_MaskMap2GradientFloat0("x:Mask2Alpha0,y:Pos0,z:Mask2Alpha1,w:Pos1",Vector) = (0,0,1,1)
     	_MaskMap2GradientFloat1("x:Mask2Alpha2,y:Pos2,z:Mask2Alpha3,w:Pos3",Vector) = (1,0,1,1)
     	_MaskMap2GradientFloat2("x:Mask2Alpha4,y:Pos4,z:Mask2Alpha5,w:Pos5",Vector) = (1,0,1,1)
     	_MaskMap3GradientToggle("遮罩3渐变模式",Float) = 0
     	_MaskMap3GradientCount("颜色映射数量",Integer) = 2
-	    _MaskMap3GradientFloat0("x:Mask3Alpha0,y:Pos0,z:Mask3Alpha1,w:Pos1",Vector) = (1,0,1,1)
+	    _MaskMap3GradientFloat0("x:Mask3Alpha0,y:Pos0,z:Mask3Alpha1,w:Pos1",Vector) = (0,0,1,1)
     	_MaskMap3GradientFloat1("x:Mask3Alpha2,y:Pos2,z:Mask3Alpha3,w:Pos3",Vector) = (1,0,1,1)
     	_MaskMap3GradientFloat2("x:Mask3Alpha4,y:Pos4,z:Mask3Alpha5,w:Pos5",Vector) = (1,0,1,1)
         
@@ -313,7 +313,7 @@
         
         _ParallaxMapping_Toggle("视差",Float) = 0
         _ParallaxMapping_Map("视差贴图",2D) = "white"{}
-        _ParallaxMapping_Intensity("视差强度",Float) = 1
+        _ParallaxMapping_Intensity("视差强度",Float) = 0.05
     	_ParallaxMapping_Vec("遮蔽视差层数 x:最小值,y:最大值",Vector) = (5,30,0,0)
         
         
