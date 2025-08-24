@@ -27,6 +27,8 @@ namespace NBShaderEditor
 
         private StencilValuesConfig _stencilValuesConfig;
 
+        private bool isInit = true;
+
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props)
         {
             //一定要初始化在第一行
@@ -41,8 +43,6 @@ namespace NBShaderEditor
 
             }
 
-            matEditor = materialEditor;
-
             if (!_stencilValuesConfig)
             {
                 _stencilValuesConfig =
@@ -51,15 +51,22 @@ namespace NBShaderEditor
             }
 
             matEditor = materialEditor;
+            EditorGUIUtility.labelWidth = 180f;
             _helper.Init(materialEditor, props, shaderFlags.ToArray(), mats);
+
+            if (isInit)
+            {
+                CacheRenderersUsingThisMaterial(mats[0],0);
+                isInit = false;
+            }
 
             _helper.DrawToolBar();
             EditorGUI.BeginChangeCheck();
 
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMeshOption, 3, GetAnimBoolIndex(3), "模式设置",
-                () => DrawMeshOptions());
+                () => DrawMeshOptions(),false);
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitBaseOption, 3, GetAnimBoolIndex(3), "基本全局功能",
-                () => DrawBaseOptions());
+                () => DrawBaseOptions(),false);
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMainTexOption, 3, GetAnimBoolIndex(3), "主贴图功能",
                 () => DrawMainTexOptions());
 
@@ -73,12 +80,14 @@ namespace NBShaderEditor
                 () => DrawFeatureOptions());
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBit1TaOption, 4, GetAnimBoolIndex(4), "TA调试",
                 () => DrawTaOptions());
+            
+            EditorGUIUtility.labelWidth = 0f;
 
             if (mats.Count == 1)
             {
                 if (_meshSourceMode == MeshSourceMode.Particle || _meshSourceMode == MeshSourceMode.UIParticle)
                 {
-                    DoVertexStreamsArea(mats[0], m_RenderersUsingThisMaterial, 0); //填充stream和stremList
+                    DoVertexStreamsArea(mats[0], m_ParticleRenderersUsingThisMaterial, 0); //填充stream和stremList
                     mats[0].EnableKeyword("_CUSTOMDATA");
                 }
                 else
@@ -89,12 +98,8 @@ namespace NBShaderEditor
 
             if (EditorGUI.EndChangeCheck())
             {
-                //遍历整个场景，看哪些 粒子系统 用了这个材质。会填充m_RenderersUsingThisMaterial
-                if (mats.Count == 1 && (_meshSourceMode == MeshSourceMode.Particle ||
-                                        _meshSourceMode == MeshSourceMode.UIParticle))
-                {
-                    CacheRenderersUsingThisMaterial(mats[0], 0);
-                }
+                CacheRenderersUsingThisMaterial(mats[0], 0);
+               
 
                 DoAfterDraw();
                 
@@ -231,10 +236,9 @@ namespace NBShaderEditor
                             if (!blendProp.hasMixedValue)
                             {
                                 BlendMode blendMode = (BlendMode)blendProp.floatValue;
-                                if (blendMode == BlendMode.Premultiply || blendMode == BlendMode.Additive)
+                                if (blendMode == BlendMode.Premultiply || blendMode == BlendMode.Additive||_helper.ResetTool.IsInitResetData)
                                 {
-                                    matEditor.ShaderProperty(_helper.GetProperty("_AdditiveToPreMultiplyAlphaLerp"),
-                                        "叠加到预乘混合");
+                                    _helper.DrawSlider("叠加到预乘混合","_AdditiveToPreMultiplyAlphaLerp",0,1);
                                 }
                             }
 
@@ -264,7 +268,7 @@ namespace NBShaderEditor
         public void DrawBaseOptions()
         {
             _helper.DrawFloat("整体颜色强度", "_BaseColorIntensityForTimeline");
-            _helper.DrawSlider("整体透明度", "_AlphaAll", 0f, 1f);
+            _helper.DrawSlider("整体透明度", "_AlphaAll", rangePropertyName:"AlphaAllRangeVec");
             if (_uiEffectEnabled == 0)
             {
                 _helper.DrawPopUp("深度测试", "_ZTest", Enum.GetNames(typeof(CompareFunction)));
@@ -418,7 +422,7 @@ namespace NBShaderEditor
 
                 DrawNoiseAffectBlock(() =>
                 {
-                    _helper.DrawSlider("主贴图扭曲强度控制", "_TexDistortion_intensity", -1.0f, 1.0f);
+                    _helper.DrawSlider("主贴图扭曲强度控制", "_TexDistortion_intensity",rangePropertyName: "TexDistortionintensityRangeVec");
 
                 });
 
@@ -436,7 +440,7 @@ namespace NBShaderEditor
                     "主贴图饱和度", "_ChangeSaturability_Toggle", W9ParticleShaderFlags.FLAG_BIT_SATURABILITY_ON,
                     isIndentBlock: true, drawBlock: (isToggle) =>
                     {
-                        _helper.DrawSlider("饱和度", "_Saturability", 0, 1);
+                        _helper.DrawSlider("饱和度", "_Saturability", rangePropertyName:"SaturabilityRangeVec");
                         DrawCustomDataSelect("饱和度强度自定义曲线", W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_SATURATE, 1);
                     });
 
@@ -462,25 +466,41 @@ namespace NBShaderEditor
                     });
             };
 
-            if (_useGraphicMainTex <= 0)
-            {
+            Action drawBaseMapFoldOut = () => { 
                 _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitBaseMap, 3, GetAnimBoolIndex(3), "主贴图",
-                    "_BaseMap", "_BaseColor", drawWrapMode: true,
-                    flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP, flagIndex: 2, drawBlock:
-                    theBaseMap =>
-                    {
-                        drawAfterMainTex();
-                    });
-                // _helper.DrawTexture("主贴图","_BaseMap","_BaseColor",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP,flagIndex:2);
-            }
-            else
+                "_BaseMap", "_BaseColor", drawWrapMode: true,
+                flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP, flagIndex: 2, drawBlock:
+                theBaseMap =>
+                {
+                    drawAfterMainTex();
+                });};
+            Action drawUITextureModify = () =>
             {
-                //实际上贴图来自_MainTex
-                matEditor.ShaderProperty(_helper.GetProperty("_Color"), "贴图颜色叠加");
+                _helper.ColorProperty( "贴图颜色叠加","_Color");
                 _helper.DrawVector4In2Line("_UI_MainTex_ST", "Tilling", true);
                 _helper.DrawVector4In2Line("_UI_MainTex_ST", "Offset", false);
                 drawAfterMainTex();
+            };
+
+            if (_helper.ResetTool.IsInitResetData)
+            {
+                drawBaseMapFoldOut();
+                drawUITextureModify();
             }
+            else
+            {
+                if (_useGraphicMainTex <= 0)
+                {
+                    drawBaseMapFoldOut();
+                    // _helper.DrawTexture("主贴图","_BaseMap","_BaseColor",drawWrapMode:true,flagBitsName:W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP,flagIndex:2);
+                }
+                else
+                {
+                    drawUITextureModify();
+                    //实际上贴图来自_MainTex
+                }
+            }
+
 
         }
 
@@ -516,9 +536,9 @@ namespace NBShaderEditor
                                 drawBlock:
                                 isToggle =>
                                 {
-                                    if (!isToggle.hasMixedValue && isToggle.floatValue > 0.5f)
+                                    if ((!isToggle.hasMixedValue && isToggle.floatValue > 0.5f)||_helper.ResetTool.IsInitResetData)
                                     {
-                                        matEditor.ShaderProperty(_helper.GetProperty("_SpecularColor"), "高光颜色");
+                                        _helper.ColorProperty("高光颜色","_SpecularColor");
                                         _helper.DrawVector4Component("光滑度", "_MaterialInfo", "y", true, 0, 1);
 
                                     }
@@ -601,9 +621,8 @@ namespace NBShaderEditor
                                 _helper.DrawToggle("法线跟随主贴图UV", "_BumpTexFollowMainTexUVToggle", W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX, 1);
                                 //在DoAfterDraw会执行SetKeyword的逻辑。
                                 _helper.DrawToggle("法线贴图多通道模式", "_BumpMapMaskMode", W9ParticleShaderFlags.FLAG_BIT_PARTICLE_NORMALMAP_MASK_MODE);
-                                _helper.DrawSlider("法线强度", "_BumpScale", -5f, 5f);
+                                _helper.DrawSlider("法线强度", "_BumpScale", rangePropertyName:"BumpScaleRangeVec");
                             });
-
                     });
 
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2MatCapToggle, 5, GetAnimBoolIndex(5),
@@ -625,6 +644,13 @@ namespace NBShaderEditor
             _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMask, 3, GetAnimBoolIndex(3), "遮罩",
                 "_Mask_Toggle", shaderKeyword: "_MASKMAP_ON", fontStyle: FontStyle.Bold, drawBlock: (isToggle) =>
                 {
+                    _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2MaskRefine,5,GetAnimBoolIndex(5),"遮罩整体调整","_MaskRefineToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MASK_REFINE,1,drawBlock:
+                        maskRefineProp =>
+                        {
+                            _helper.DrawVector4Component("范围(Pow)","_MaskRefineVec","x",false);
+                            _helper.DrawVector4Component("相乘","_MaskRefineVec","y",false);
+                            _helper.DrawVector4Component("偏移(相加)","_MaskRefineVec","z",false);
+                        });
 
                     _helper.DrawPopUp("遮罩模式", "_MaskMapGradientToggle", _maskMapModeNames,
                         drawBlock: maskMapModeProp =>
@@ -671,27 +697,7 @@ namespace NBShaderEditor
                                 }
                             }
 
-                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMaskMap, 4, "遮罩UV来源",
-                                W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP, 0);
-                            DrawCustomDataSelect("Mask图X轴偏移自定义曲线",
-                                W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X, 0);
-                            DrawCustomDataSelect("Mask图Y轴偏移自定义曲线",
-                                W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y, 0);
-                            _helper.DrawVector4Component("遮罩强度", "_MaskMapVec", "x", false);
-                            _helper.DrawVector4In2Line("_MaskMapOffsetAnition", "遮罩偏移速度", true);
-                            _helper.DrawFloat("遮罩旋转", "_MaskMapUVRotation");
-                            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMaskRotate, 3,
-                                GetAnimBoolIndex(3), "遮罩旋转速度", "_Mask_RotationToggle", W9ParticleShaderFlags
-                                    .FLAG_BIT_PARTILCE_MASKMAPROTATIONANIMATION_ON, isIndentBlock: false,
-                                drawBlock: (isToggle2) =>
-                                {
-                                    _helper.DrawFloat("旋转速度", "_MaskMapRotationSpeed");
-                                });
-
-                            DrawNoiseAffectBlock(() =>
-                            {
-                                _helper.DrawSlider("遮罩扭曲强度", "_MaskDistortion_intensity", -2, 2);
-                            });
+                     
 
                         }, drawOnValueChangedBlock: maskMapModeProp =>
                         {
@@ -710,6 +716,28 @@ namespace NBShaderEditor
                                             index: 1);
                                 }
                             }
+                        });
+                    
+                        DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMaskMap, 4, "遮罩UV来源",
+                            W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP, 0);
+                        DrawCustomDataSelect("Mask图X轴偏移自定义曲线",
+                            W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X, 0);
+                        DrawCustomDataSelect("Mask图Y轴偏移自定义曲线",
+                            W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y, 0);
+                        _helper.DrawVector4Component("遮罩强度", "_MaskMapVec", "x", false);
+                        _helper.DrawVector4In2Line("_MaskMapOffsetAnition", "遮罩偏移速度", true);
+                        _helper.DrawFloat("遮罩旋转", "_MaskMapUVRotation");
+                        _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMaskRotate, 3,
+                            GetAnimBoolIndex(3), "遮罩旋转速度", "_Mask_RotationToggle", W9ParticleShaderFlags
+                                .FLAG_BIT_PARTILCE_MASKMAPROTATIONANIMATION_ON, isIndentBlock: false,
+                            drawBlock: (isToggle2) =>
+                            {
+                                _helper.DrawFloat("旋转速度", "_MaskMapRotationSpeed");
+                            });
+
+                        DrawNoiseAffectBlock(() =>
+                        {
+                            _helper.DrawSlider("遮罩扭曲强度", "_MaskDistortion_intensity", rangePropertyName:"MaskDistortionIntensityRangeVec");
                         });
 
                     _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMask2, 3, GetAnimBoolIndex(3), "遮罩2",
@@ -765,6 +793,7 @@ namespace NBShaderEditor
 
                                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMaskMap2, 4, "遮罩2UV来源",
                                         W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP_2, 0);
+                                    _helper.DrawVector4Component("遮罩2旋转","_MaskMapVec","y",false);
                                     _helper.DrawVector4In2Line("_MaskMapOffsetAnition", "遮罩2偏移速度", false);
                                 }, drawOnValueChangedBlock: maskMap2GradientModeProp =>
                                 {
@@ -842,6 +871,8 @@ namespace NBShaderEditor
 
                                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeMaskMap3, 4, "遮罩3UV来源",
                                         W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_MASKMAP_3, 0);
+                                    _helper.DrawVector4Component("遮罩3旋转","_MaskMapVec","z",false);
+                                    
                                     _helper.DrawVector4In2Line("_MaskMap3OffsetAnition", "遮罩3偏移速度", true);
                                 }, drawOnValueChangedBlock: maskMap3GradientModeProp =>
                                 {
@@ -967,7 +998,7 @@ namespace NBShaderEditor
                                 DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeEmissionMap, 4, "流光贴图UV来源", W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_EMISSION_MAP, 0, theEmissionMap);
                                 _helper.DrawSlider("流光贴图旋转", "_EmissionMapUVRotation", 0f, 360f);
                                 _helper.DrawVector4In2Line("_EmissionMapUVOffset", "流光贴图偏移速度", true);
-                                DrawNoiseAffectBlock(() => { _helper.DrawFloat("流光贴图扭曲强度", "_Emi_Distortion_intensity"); });
+                                DrawNoiseAffectBlock(() => { _helper.DrawSlider("流光贴图扭曲强度", "_Emi_Distortion_intensity",rangePropertyName:"EmiDistortionIntensityRangeVec"); });
                             }
                         });
                     
@@ -1026,24 +1057,40 @@ namespace NBShaderEditor
                     _helper.DrawPopUp("Ramp来源模式", "_RampColorSourceMode", rampColorSourceMode,
                         drawBlock: modeProp =>
                         {
-                            if (!modeProp.hasMixedValue)
+                            Action drawRampTexture = () =>
                             {
-                                if (modeProp.floatValue >= 0.5f)
+                                _helper.DrawTexture("颜色映射黑白图", "_RampColorMap", drawWrapMode: true,
+                                    wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP,
+                                    flagIndex: 2,
+                                    drawBlock: texProp =>
+                                    {
+                                        DrawColorChannelSelect("颜色映射黑白图通道选择",
+                                            W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_RAMP_COLOR_MAP);
+                                    }); 
+                            };
+                            Action drawNoRampTexture = () =>
+                            {
+                                _helper.TextureScaleOffsetProperty("_RampColorMap");
+                                _helper.DrawWrapMode("颜色映射UV",
+                                    W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP, 2);
+                            };
+                            if (_helper.ResetTool.IsInitResetData)
+                            {
+                                drawRampTexture();
+                                drawNoRampTexture();
+                            }
+                            else
+                            {
+                                if (!modeProp.hasMixedValue)
                                 {
-                                    _helper.DrawTexture("颜色映射黑白图", "_RampColorMap", drawWrapMode: true,
-                                        wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP,
-                                        flagIndex: 2,
-                                        drawBlock: texProp =>
-                                        {
-                                            DrawColorChannelSelect("颜色映射黑白图通道选择",
-                                                W9ParticleShaderFlags.FLAG_BIT_COLOR_CHANNEL_POS_0_RAMP_COLOR_MAP);
-                                        });
-                                }
-                                else
-                                {
-                                    matEditor.TextureScaleOffsetProperty(_helper.GetProperty("_RampColorMap"));
-                                    _helper.DrawWrapMode("颜色映射UV",
-                                        W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_RAMP_COLOR_MAP, 2);
+                                    if (modeProp.floatValue >= 0.5f)
+                                    {
+                                        drawRampTexture();
+                                    }
+                                    else
+                                    {
+                                        drawNoRampTexture();
+                                    }
                                 }
                             }
                         }, drawOnValueChangedBlock: modeProp =>
@@ -1064,7 +1111,7 @@ namespace NBShaderEditor
                         });
                     DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeRampColorMap, 4, "颜色映射黑白图UV来源",
                         W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_RAMP_COLOR_MAP, 0,
-                        _helper.GetProperty("_RampColorMap"));
+                        _helper.GetProperty("_RampColorMap"),forceEnable:true);
                     _helper.DrawVector4In2Line("_RampColorMapOffset", "颜色映射贴图偏移速度", true);
                     _helper.DrawVector4Component("颜色映射贴图旋转", "_RampColorMapOffset", "w", true, 0f, 360f);
                     rampColorPropArr[0] = _helper.GetProperty("_RampColor0");
@@ -1086,12 +1133,12 @@ namespace NBShaderEditor
                                 if (modeProp.floatValue > 0.5f)
                                 {
                                     shaderFlags[i].SetFlagBits(W9ParticleShaderFlags
-                                        .FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_ALPHA_MULTIPLY);
+                                        .FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_ADD);
                                 }
                                 else
                                 {
                                     shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags
-                                        .FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_ALPHA_MULTIPLY);
+                                        .FLAG_BIT_PARTICLE_RAMP_COLOR_BLEND_ADD);
                                 }
                             }
                         });
@@ -1123,7 +1170,7 @@ namespace NBShaderEditor
                         });
                     _helper.DrawVector4Component("溶解值Pow", "_Dissolve","y",true,0f,10f);
                     _helper.DrawToggle("溶解度黑白值测试", "_Dissolve_Test_Toggle", shaderKeyword: "_DISSOLVE_EDITOR_TEST");
-                    _helper.DrawVector4Component("溶解强度", "_Dissolve", "x", true, -1f, 2f);
+                    _helper.DrawVector4Component("溶解强度", "_Dissolve", "x", true, rangeVecPropName:"DissolveXRangeVec");
                     DrawCustomDataSelect("溶解强度自定义曲线", W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_DISSOLVE_INTENSITY,
                         0);
                     _helper.DrawVector4Component("溶解硬软度", "_Dissolve", "w", true, 0.001f, 1f);
@@ -1156,7 +1203,7 @@ namespace NBShaderEditor
                             _helper.DrawVector4In2Line("_DissolveVoronoi_Vec3", "噪波2偏移速度", false);
                             EditorGUILayout.Space();
                             EditorGUILayout.Space();
-                            _helper.DrawVector4Component("噪波1和噪波2混合系数(圆尖)", "_DissolveVoronoi_Vec2", "x", true);
+                            _helper.DrawVector4Component("噪波12混合系数(圆尖)", "_DissolveVoronoi_Vec2", "x", true);
                             _helper.DrawVector4Component("噪波整体和溶解贴图混合系数", "_DissolveVoronoi_Vec2", "y", true);
                             EditorGUILayout.Space();
                         });
@@ -1164,9 +1211,10 @@ namespace NBShaderEditor
                     _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2DissolveLine,5,GetAnimBoolIndex(5),"溶解描边","_DissolveLineMaskToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_DISSOLVE_LINE_MASK,1,drawBlock:
                         isDissolveLineMask =>
                         {
-                             matEditor.ColorProperty(_helper.GetProperty("_DissolveLineColor"), "溶解描边颜色");
-                            _helper.DrawVector4Component("描边范围(Tilling)","_Dissolve_Vec2","x",false);
-                            _helper.DrawVector4Component("描边偏移(Offset)","_Dissolve_Vec2","y",false);
+                             // matEditor.ColorProperty(_helper.GetProperty("_DissolveLineColor"), "溶解描边颜色");
+                             _helper.ColorProperty("溶解描边颜色","_DissolveLineColor");
+                            _helper.DrawVector4Component("描边位置","_Dissolve_Vec2","x",true,rangeVecPropName:"Dissolve2XRangeVec");
+                            _helper.DrawVector4Component("描边软硬","_Dissolve_Vec2","y",true,rangeVecPropName:"Dissolve2YRangeVec");
 
                         });
 
@@ -1180,38 +1228,56 @@ namespace NBShaderEditor
                             _helper.DrawPopUp("溶解Ramp模式", "_DissolveRampSourceMode", dissolveRampSourceMode,
                                 drawBlock: dissolveRampModeProp =>
                                 {
-                                    if (!dissolveRampModeProp.hasMixedValue)
+                                    Action drawRampTexture = () =>
                                     {
-                                        if (dissolveRampModeProp.floatValue > 0.5f)
+                                        _helper.DrawTexture("溶解Ramp图", "_DissolveRampMap", "_DissolveRampColor",
+                                            drawScaleOffset: true, drawWrapMode: true,
+                                            wrapModeFlagBitsName: W9ParticleShaderFlags
+                                                .FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP, flagIndex: 2);
+                                    };
+                                    Action drawRampGradient = () =>
+                                    {
+                                        dissolveRampColorPropArr[0] = _helper.GetProperty("_DissolveRampColor0");
+                                        dissolveRampColorPropArr[1] = _helper.GetProperty("_DissolveRampColor1");
+                                        dissolveRampColorPropArr[2] = _helper.GetProperty("_DissolveRampColor2");
+                                        dissolveRampColorPropArr[3] = _helper.GetProperty("_DissolveRampColor3");
+                                        dissolveRampColorPropArr[4] = _helper.GetProperty("_DissolveRampColor4");
+                                        dissolveRampColorPropArr[5] = _helper.GetProperty("_DissolveRampColor5");
+                                        dissolveRampAlphaPropArr[0] = _helper.GetProperty("_DissolveRampAlpha0");
+                                        dissolveRampAlphaPropArr[1] = _helper.GetProperty("_DissolveRampAlpha1");
+                                        dissolveRampAlphaPropArr[2] = _helper.GetProperty("_DissolveRampAlpha2");
+                                        _helper.DrawGradient(dissolveRampGradient, true, ColorSpace.Gamma,
+                                            "Ramp颜色", 6, "_DissolveRampCount", dissolveRampColorPropArr,
+                                            dissolveRampAlphaPropArr);
+                                        matEditor.TextureScaleOffsetProperty(
+                                            _helper.GetProperty("_DissolveRampMap"));
+                                        matEditor.ShaderProperty(_helper.GetProperty("_DissolveRampColor"),
+                                            "Ramp颜色叠加");
+                                        _helper.DrawWrapMode("溶解RampUV",
+                                            W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP, 2);
+                                        
+                                    };
+                                    if (_helper.ResetTool.IsInitResetData)
+                                    {
+                                        drawRampTexture();
+                                        drawRampGradient();
+                                    }
+                                    else
+                                    {
+                                        if (!dissolveRampModeProp.hasMixedValue)
                                         {
-                                            _helper.DrawTexture("溶解Ramp图", "_DissolveRampMap", "_DissolveRampColor",
-                                                drawScaleOffset: true, drawWrapMode: true,
-                                                wrapModeFlagBitsName: W9ParticleShaderFlags
-                                                    .FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP, flagIndex: 2);
-                                        }
-                                        else
-                                        {
-                                            dissolveRampColorPropArr[0] = _helper.GetProperty("_DissolveRampColor0");
-                                            dissolveRampColorPropArr[1] = _helper.GetProperty("_DissolveRampColor1");
-                                            dissolveRampColorPropArr[2] = _helper.GetProperty("_DissolveRampColor2");
-                                            dissolveRampColorPropArr[3] = _helper.GetProperty("_DissolveRampColor3");
-                                            dissolveRampColorPropArr[4] = _helper.GetProperty("_DissolveRampColor4");
-                                            dissolveRampColorPropArr[5] = _helper.GetProperty("_DissolveRampColor5");
-                                            dissolveRampAlphaPropArr[0] = _helper.GetProperty("_DissolveRampAlpha0");
-                                            dissolveRampAlphaPropArr[1] = _helper.GetProperty("_DissolveRampAlpha1");
-                                            dissolveRampAlphaPropArr[2] = _helper.GetProperty("_DissolveRampAlpha2");
-                                            _helper.DrawGradient(dissolveRampGradient, true, ColorSpace.Gamma,
-                                                "Ramp颜色", 6, "_DissolveRampCount", dissolveRampColorPropArr,
-                                                dissolveRampAlphaPropArr);
-                                            matEditor.TextureScaleOffsetProperty(
-                                                _helper.GetProperty("_DissolveRampMap"));
-                                            matEditor.ShaderProperty(_helper.GetProperty("_DissolveRampColor"),
-                                                "Ramp颜色叠加");
-                                            _helper.DrawWrapMode("溶解RampUV",
-                                                W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_DISSOLVE_RAMPMAP, 2);
-
+                                            if (dissolveRampModeProp.floatValue > 0.5f)
+                                            {
+                                                drawRampTexture();
+                                            }
+                                            else
+                                            {
+                                                drawRampGradient();
+                                            }
                                         }
                                     }
+                                    
+                                    
                                     _helper.DrawPopUp("溶解Ramp混合模式","_DissolveRampColorBlendMode",dissolveRampBlendModeNames,drawOnValueChangedBlock:
                                         rampColorBend =>
                                         {
@@ -1488,6 +1554,15 @@ namespace NBShaderEditor
                     mat.SetFloat("_ZTest", (float)CompareFunction.LessEqual);
                     mat.SetFloat("_ForceZWriteToggle",2);
                 };
+                Action<Material> RestPortal = (mat) =>
+                {
+                    StencilTestHelper.SetMaterialStencil(mat, _defaultStencilKey,
+                        _stencilValuesConfig, out int ignore);
+                    mat.SetFloat(_isCustomedStencilPropID, 0f);
+                    mat.SetFloat("_TransparentMode", (float)TransparentMode.Transparent);
+                    mat.SetFloat("_ZTest", (float)CompareFunction.LessEqual);
+                    mat.SetFloat("_ForceZWriteToggle", 0f);
+                };
 
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit1Portal, 4, GetAnimBoolIndex(4), "模板视差",
                     "_Portal_Toggle", fontStyle: FontStyle.Bold,
@@ -1504,9 +1579,13 @@ namespace NBShaderEditor
                                     {
                                         SetPortalMask(mats[i]);
                                     }
-                                    else //Portal此时一定是打开的。
+                                    else if(isPortalToggle.floatValue >0.5f) 
                                     {
                                         SetPortal(mats[i]);
+                                    }
+                                    else
+                                    {
+                                        RestPortal(mats[i]);
                                     }
 
                                 }
@@ -1514,30 +1593,22 @@ namespace NBShaderEditor
                         });
                     }, drawEndChangeCheck: (isPortalToggle) =>
                     {
-                        if (!isPortalToggle.hasMixedValue)
+                        for (int i = 0; i < mats.Count; i++)
                         {
-                            for (int i = 0; i < mats.Count; i++)
+                            if (isPortalToggle.floatValue > 0.5f)
                             {
-                                if (isPortalToggle.floatValue > 0.5f)
+                                if (mats[i].GetFloat("_Portal_MaskToggle") < 0.5f)
                                 {
-                                    if (mats[i].GetFloat("_Portal_MaskToggle") < 0.5f)
-                                    {
-                                        SetPortal(mats[i]);
-                                    }
-                                    else
-                                    {
-                                        SetPortalMask(mats[i]);
-                                    }
+                                    SetPortal(mats[i]);
                                 }
                                 else
                                 {
-                                    StencilTestHelper.SetMaterialStencil(mats[i], _defaultStencilKey,
-                                        _stencilValuesConfig, out int ignore);
-                                    mats[i].SetFloat(_isCustomedStencilPropID, 0f);
-                                    mats[i].SetFloat("_TransparentMode", (float)TransparentMode.Transparent);
-                                    mats[i].SetFloat("_ZTest", (float)CompareFunction.LessEqual);
-                                    mats[i].SetFloat("_ForceZWriteToggle", 0f);
+                                    SetPortalMask(mats[i]);
                                 }
+                            }
+                            else
+                            {
+                                RestPortal(mats[i]);
                             }
                         }
                     });
@@ -1816,8 +1887,8 @@ namespace NBShaderEditor
         
         private string[] rampColorBlendMode =
         {
-            "相加Add",
-            "相乘Multiply"
+            "相乘Multiply",
+            "相加Add"
         };
         
         void DoAfterDraw()
@@ -2101,28 +2172,40 @@ namespace NBShaderEditor
 
         public static string undoApplyCustomVertexStreams = L10n.Tr("Apply custom vertex streams from material");
         
-        List<ParticleSystemRenderer> m_RenderersUsingThisMaterial = new List<ParticleSystemRenderer>();
+        List<ParticleSystemRenderer> m_ParticleRenderersUsingThisMaterial = new List<ParticleSystemRenderer>();
+        List<Renderer> m_RenderersUsingThisMaterial = new List<Renderer>();
 
         private bool checkIsParicleSystem = false;
         void CacheRenderersUsingThisMaterial(Material material, int matID)
         {
             checkIsParicleSystem = false;
+            m_ParticleRenderersUsingThisMaterial.Clear();
             m_RenderersUsingThisMaterial.Clear();
             // #if UNITY_2022_1_OR_NEWER
             // ParticleSystemRenderer[] renderers =
             //     UnityEngine.Object.FindObjectsByType(typeof(ParticleSystemRenderer),FindObjectsSortMode.None) as ParticleSystemRenderer[];
             // #else
-            ParticleSystemRenderer[] renderers =
-                UnityEngine.Object.FindObjectsOfType(typeof(ParticleSystemRenderer)) as ParticleSystemRenderer[];//为了兼容性使用较慢版本
-            // #endif
-            foreach (ParticleSystemRenderer renderer in renderers)
+            Renderer[] renderers =
+                UnityEngine.Object.FindObjectsOfType(typeof(Renderer)) as Renderer[];//为了兼容性使用较慢版本
+            if (renderers != null)
             {
-                if (renderer.sharedMaterial == material || renderer.trailMaterial == material)
+                m_RenderersUsingThisMaterial = renderers.ToList();
+                _helper.renderersUsingThisMaterial = m_RenderersUsingThisMaterial;
+            }
+            // #endif
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer is ParticleSystemRenderer)
                 {
-                    checkIsParicleSystem = true;
-                    shaderFlags[matID].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_ANIMATION_SHEET_HELPER,index:1);//如果是粒子系统用，就主动关掉Helper的类型。
-                    m_RenderersUsingThisMaterial.Add(renderer);
+                    ParticleSystemRenderer psr = renderer as ParticleSystemRenderer;
+                    if (psr.sharedMaterial == material || psr.trailMaterial == material)
+                    {
+                        checkIsParicleSystem = true;
+                        shaderFlags[matID].ClearFlagBits(W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_ANIMATION_SHEET_HELPER,index:1);//如果是粒子系统用，就主动关掉Helper的类型。
+                        m_ParticleRenderersUsingThisMaterial.Add(psr);
+                    }
                 }
+                
             }
         }
         
@@ -2466,10 +2549,14 @@ namespace NBShaderEditor
             }
             return false;
         }
-        public void DrawUVModeSelect(int foldOutFlagBit, int foldOutFlagIndex,string label, int uvModeBitPos, int uvModeFlagIndex,MaterialProperty textureProp = null)
+        public void DrawUVModeSelect(int foldOutFlagBit, int foldOutFlagIndex,string label, int uvModeBitPos, int uvModeFlagIndex,MaterialProperty textureProp = null,bool forceEnable = false)
         {
             // if(textureProp.hasMixedValue) return;
-            if (textureProp != null)
+            if(forceEnable)
+            {
+                EditorGUI.BeginDisabledGroup(false);
+            }
+            else if (textureProp != null)
             {
                 EditorGUI.BeginDisabledGroup(!textureProp.textureValue);
             }

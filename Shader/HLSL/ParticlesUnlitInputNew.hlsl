@@ -68,6 +68,7 @@
     half4 _MaskMapOffsetAnition;
     half4 _MaskMap3OffsetAnition;
     half4 _MaskMapVec;
+    half4 _MaskRefineVec;
 
     int _MaskMapGradientCount;
     half4 _MaskMapGradientFloat0;
@@ -806,6 +807,7 @@ Texture2D _MatCapTex;
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASK_MAP2))
             {
                 float2 maskMap2UV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_MASKMAP_2,baseUVs);
+                maskMap2UV = Rotate_Radians_float(maskMap2UV,half2(0.5,0.5),_MaskMapVec.y);
                 maskMap2UV = maskMap2UV * _MaskMap2_ST.xy + _MaskMap2_ST.zw;
                     
                 maskMap2UV = UVOffsetAnimaiton(maskMap2UV,_MaskMapOffsetAnition.zw);
@@ -816,6 +818,8 @@ Texture2D _MatCapTex;
             if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_MASK_MAP3))
             {
                 float2 maskMap3UV = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_MASKMAP_3,baseUVs);
+                maskMap3UV = Rotate_Radians_float(maskMap3UV,half2(0.5,0.5),_MaskMapVec.z);
+                
                 maskMap3UV = maskMap3UV* _MaskMap3_ST.xy + _MaskMap3_ST.zw;
                 
                 maskMap3UV = UVOffsetAnimaiton(maskMap3UV,_MaskMap3OffsetAnition.xy);
