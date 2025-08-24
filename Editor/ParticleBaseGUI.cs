@@ -644,12 +644,14 @@ namespace NBShaderEditor
             _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMask, 3, GetAnimBoolIndex(3), "遮罩",
                 "_Mask_Toggle", shaderKeyword: "_MASKMAP_ON", fontStyle: FontStyle.Bold, drawBlock: (isToggle) =>
                 {
+                    _helper.DrawVector4Component("遮罩强度", "_MaskMapVec", "x", true);
                     _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2MaskRefine,5,GetAnimBoolIndex(5),"遮罩整体调整","_MaskRefineToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_MASK_REFINE,1,drawBlock:
                         maskRefineProp =>
                         {
                             _helper.DrawVector4Component("范围(Pow)","_MaskRefineVec","x",false);
                             _helper.DrawVector4Component("相乘","_MaskRefineVec","y",false);
                             _helper.DrawVector4Component("偏移(相加)","_MaskRefineVec","z",false);
+                            
                         });
 
                     _helper.DrawPopUp("遮罩模式", "_MaskMapGradientToggle", _maskMapModeNames,
@@ -724,7 +726,6 @@ namespace NBShaderEditor
                             W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_X, 0);
                         DrawCustomDataSelect("Mask图Y轴偏移自定义曲线",
                             W9ParticleShaderFlags.FLAGBIT_POS_0_CUSTOMDATA_MASK_OFFSET_Y, 0);
-                        _helper.DrawVector4Component("遮罩强度", "_MaskMapVec", "x", false);
                         _helper.DrawVector4In2Line("_MaskMapOffsetAnition", "遮罩偏移速度", true);
                         _helper.DrawFloat("遮罩旋转", "_MaskMapUVRotation");
                         _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitMaskRotate, 3,

@@ -24,7 +24,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
 
     public const string colorChannelFlagName = "_W9ParticleShaderColorChannelFlag";
     public static int colorChannelFlagId = Shader.PropertyToID(colorChannelFlagName);
-    protected override int GetShaderFlagsId(int index = 0)
+    public override int GetShaderFlagsId(int index = 0)
     {
         switch (index)
         {
