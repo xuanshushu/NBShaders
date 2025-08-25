@@ -805,7 +805,12 @@
                 }
 
                 UNITY_BRANCH
-                if(CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON))
+                if(CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_FADE_ON))
+                {
+                    fresnelValue *= alpha;
+                    alpha = lerp(alpha,fresnelValue,_FresnelUnit.z);
+                }
+                else
                 {
                     float fresnelColorIntensity = fresnelValue*_FresnelColor.a*_FresnelUnit.z;
                     
@@ -814,13 +819,6 @@
                     {
                         alpha = max(alpha,fresnelColorIntensity);//颜色要不要不被主贴图Alpha影响呢？
                     }
-                }
-
-                UNITY_BRANCH
-                if(CheckLocalFlags(FLAG_BIT_PARTICLE_FRESNEL_FADE_ON))
-                {
-                    fresnelValue *= alpha;
-                    alpha = lerp(alpha,fresnelValue,_FresnelUnit.z);
                 }
                 
             }

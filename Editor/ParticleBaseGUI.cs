@@ -527,10 +527,9 @@ namespace NBShaderEditor
                 if (!mode.hasMixedValue)
                 {
                     _fxLightMode = (FxLightMode)mode.floatValue;
-                    if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.PBR ||
-                        _fxLightMode == FxLightMode.HalfLambert)
+                    if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.PBR || _fxLightMode == FxLightMode.HalfLambert||_helper.ResetTool.IsInitResetData)
                     {
-                        if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.HalfLambert)
+                        if (_fxLightMode == FxLightMode.BlinnPhong || _fxLightMode == FxLightMode.HalfLambert||_helper.ResetTool.IsInitResetData)
                         {
                             _helper.DrawToggle("高光开关", "_BlinnPhongSpecularToggle", shaderKeyword: "_SPECULAR_COLOR",
                                 drawBlock:
@@ -545,13 +544,13 @@ namespace NBShaderEditor
                                 });
                         }
 
-                        if (_fxLightMode == FxLightMode.PBR)
+                        if (_fxLightMode == FxLightMode.PBR||_helper.ResetTool.IsInitResetData)
                         {
                             _helper.DrawVector4Component("金属度", "_MaterialInfo", "x", true, 0, 1);
                             _helper.DrawVector4Component("光滑度", "_MaterialInfo", "y", true, 0, 1);
                         }
                     }
-                    else if (_fxLightMode == FxLightMode.SixWay)
+                    if (_fxLightMode == FxLightMode.SixWay||_helper.ResetTool.IsInitResetData)
                     {
                         _helper.DrawTexture("六路正方向图(P)", "_RigRTBk", drawScaleOffset: false);
                         _helper.DrawTexture("六路反方向图(N)", "_RigLBtF", drawScaleOffset: false);
@@ -588,7 +587,7 @@ namespace NBShaderEditor
                                 }
                             });
                         _helper.DrawVector4Component("六路自发光Pow", "_SixWayInfo", "y", false);
-                        matEditor.ShaderProperty(_helper.GetProperty("_SixWayEmissionColor"), "六路自发光颜色");
+                        _helper.ColorProperty("六路自发光颜色","_SixWayEmissionColor");
                     }
                 }
                 else
@@ -598,7 +597,7 @@ namespace NBShaderEditor
 
             });
 
-            if (_fxLightMode != FxLightMode.SixWay)
+            if (_fxLightMode != FxLightMode.SixWay||_helper.ResetTool.IsInitResetData)
             {
                 //--------------法线-----------------
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2BumpTexToggle, 5, GetAnimBoolIndex(5),
@@ -1342,41 +1341,44 @@ namespace NBShaderEditor
                 fontStyle: FontStyle.Bold,
                 drawBlock: (isToggle) =>
                 {
+                    Action drawFresnelColorMode = () =>
+                    {
+                        // matEditor.ColorProperty(_helper.GetProperty("_FresnelColor"), "菲涅尔颜色");
+                        _helper.ColorProperty("菲涅尔颜色","_FresnelColor");
+                        _helper.DrawToggle("菲涅尔颜色受Alpha影响", "_FresnelColorAffectByAlpha",
+                            W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_AFFETCT_BY_ALPHA);
+                    };
                     _helper.DrawPopUp("菲涅尔模式", "_FresnelMode", _fresnelModeNames, drawBlock:
                         fresnelModeProp =>
                         {
-                            if ((!fresnelModeProp.hasMixedValue) &&
-                                fresnelModeProp.floatValue.Equals((float)FresnelMode.Color))
+                            if (_helper.ResetTool.IsInitResetData)
                             {
-                                matEditor.ColorProperty(_helper.GetProperty("_FresnelColor"), "菲涅尔颜色");
-                                _helper.DrawToggle("菲涅尔颜色受Alpha影响", "_FresnelColorAffectByAlpha",
-                                    W9ParticleShaderFlags.FLAG_BIT_PARTICLE_FRESNEL_COLOR_AFFETCT_BY_ALPHA);
+                                drawFresnelColorMode();
+                            }
+                            else
+                            {
+                                if ((!fresnelModeProp.hasMixedValue) && fresnelModeProp.floatValue.Equals((float)FresnelMode.Color))
+                                {
+                                    drawFresnelColorMode();
+                                }
                             }
                         },
                         drawOnValueChangedBlock: fresnelModeProp =>
                         {
-                            if (!fresnelModeProp.hasMixedValue)
+                            FresnelMode fresnelMode = (FresnelMode)fresnelModeProp.floatValue;
+                            for (int i = 0; i < shaderFlags.Count; i++)
                             {
-                                FresnelMode fresnelMode = (FresnelMode)fresnelModeProp.floatValue;
-                                for (int i = 0; i < shaderFlags.Count; i++)
+                                switch (fresnelMode)
                                 {
-                                    switch (fresnelMode)
-                                    {
-                                        case FresnelMode.Color:
-                                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags
-                                                .FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
-                                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags
-                                                .FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
-                                            break;
-                                        case FresnelMode.Fade:
-                                            shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags
-                                                .FLAG_BIT_PARTICLE_FRESNEL_COLOR_ON);
-                                            shaderFlags[i].SetFlagBits(W9ParticleShaderFlags
-                                                .FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
-                                            break;
-                                    }
+                                    case FresnelMode.Color:
+                                        shaderFlags[i].ClearFlagBits(W9ParticleShaderFlags
+                                            .FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
+                                        break;
+                                    case FresnelMode.Fade:
+                                        shaderFlags[i].SetFlagBits(W9ParticleShaderFlags
+                                            .FLAG_BIT_PARTICLE_FRESNEL_FADE_ON);
+                                        break;
                                 }
-
                             }
                         });
                     _helper.DrawVector4Component("菲涅尔强度", "_FresnelUnit", "z", true);
