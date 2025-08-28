@@ -224,12 +224,13 @@ namespace NBShaderEditor
                 if (!transModeProp.hasMixedValue)
                 {
                     _transparentMode = (TransparentMode)mats[0].GetFloat("_TransparentMode");
-                    if (_transparentMode == TransparentMode.CutOff)
+                    if (_transparentMode == TransparentMode.CutOff||_helper.ResetTool.IsInitResetData)
                     {
-                        matEditor.ShaderProperty(_helper.GetProperty("_Cutoff"), "裁剪位置");
+                        // matEditor.ShaderProperty(_helper.GetProperty("_Cutoff"), "裁剪位置");
+                        _helper.DrawSlider("裁剪位置","_Cutoff");
                     }
 
-                    if (_transparentMode == TransparentMode.Transparent)
+                    if (_transparentMode == TransparentMode.Transparent||_helper.ResetTool.IsInitResetData)
                     {
                         _helper.DrawPopUp("混合模式", "_Blend", blendModeNames, drawBlock: blendProp =>
                         {

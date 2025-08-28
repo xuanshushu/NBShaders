@@ -235,67 +235,61 @@
     SamplerState sampler_linear_RepeatU_ClampV;
     SamplerState sampler_linear_ClampU_RepeatV;
 
+    half4 SampleTexture2D(Texture2D tex,float2 uv,SAMPLER( textureSampler),bool sampleLOD = false,int lod = 0)
+    {
+        if (sampleLOD)
+        {
+            return SAMPLE_TEXTURE2D_LOD(tex,textureSampler,uv,lod);
+                    
+        }
+        else
+        {
+            return SAMPLE_TEXTURE2D(tex,textureSampler,uv);
+        }
+    }
+    
+
     half4 SampleTexture2DWithWrapFlags(Texture2D tex,float2 uv,uint bits,bool sampleLOD = false,int lod = 0)
     {
         const int wrapMode = CheckLocalWrapFlags(bits);
+        #if defined(SHADER_TARGET_GLSL)
+        switch (wrapMode)
+        {
+            case 0: uv = frac(uv);break;
+            case 1: uv = saturate(uv);break;
+            case 2: uv = float2(saturate(uv.x),frac(uv.y));break;
+            case 3: uv = float2(frac(uv.x),saturate(uv.y));break; 
+        }
+        if (sampleLOD)
+        {
+            return SAMPLE_TEXTURE2D_LOD(tex,sampler_linear_clamp,uv,lod);//SamplerWillIgnore;需要在GLSL相关平台打包时强制设置为Clamp循环。
+                    
+        }
+        else
+        {
+            return SAMPLE_TEXTURE2D(tex,sampler_linear_clamp,uv);//SamplerWillIgnore;需要在GLSL相关平台打包时强制设置为Clamp循环。
+        }
+
+        #else
+        
         switch (wrapMode)
         {
             case 0:
-                if (sampleLOD)
-                {
-                    return SAMPLE_TEXTURE2D_LOD(tex,sampler_linear_repeat,uv,lod);
-                    
-                }
-                else
-                {
-                    return tex.Sample(sampler_linear_repeat,uv);
-                }
+                return SampleTexture2D(tex,uv,sampler_linear_repeat,sampleLOD,lod);
                 break;
             case 1:
-                if (sampleLOD)
-                {
-                    return SAMPLE_TEXTURE2D_LOD(tex,sampler_linear_clamp,uv,lod);
-                    
-                }
-                else
-                {
-                    return tex.Sample(sampler_linear_clamp,uv);
-                }
-                break;
+                return SampleTexture2D(tex,uv,sampler_linear_clamp,sampleLOD,lod);
             case 2:
-                if (sampleLOD)
-                {
-                    return SAMPLE_TEXTURE2D_LOD(tex,sampler_linear_RepeatU_ClampV,uv,lod);
-                    
-                }
-                else
-                {
-                    return tex.Sample(sampler_linear_RepeatU_ClampV,uv);
-                }
+                return SampleTexture2D(tex,uv,sampler_linear_RepeatU_ClampV,sampleLOD,lod);
                 break;
             case 3:
-                if (sampleLOD)
-                {
-                    return SAMPLE_TEXTURE2D_LOD(tex,sampler_linear_ClampU_RepeatV,uv,lod);
-                    
-                }
-                else
-                {
-                    return tex.Sample(sampler_linear_ClampU_RepeatV,uv);
-                }
+                return SampleTexture2D(tex,uv,sampler_linear_ClampU_RepeatV,sampleLOD,lod);
                 break;
             default:
-                if (sampleLOD)
-                {
-                    return SAMPLE_TEXTURE2D_LOD(tex,sampler_linear_repeat,uv,lod);
-                    
-                }
-                else
-                {
-                    return tex.Sample(sampler_linear_repeat,uv);
-                }
+                return SampleTexture2D(tex,uv,sampler_linear_repeat,sampleLOD,lod);
                 break;
         }
+        #endif
     }
 
     half GetColorChannel(half4 color, int bitPos)
