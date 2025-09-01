@@ -70,7 +70,7 @@ namespace NBShaderEditor
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMainTexOption, 3, GetAnimBoolIndex(3), "主贴图功能",
                 () => DrawMainTexOptions());
 
-            if (_uiEffectEnabled == 0)
+            if (_uiEffectEnabled == 0 || _helper.ResetTool.IsInitResetData)
             {
                 _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBit1LightOption, 4, GetAnimBoolIndex(4),
                     "光照功能", () => DrawLightOptions());
@@ -597,6 +597,7 @@ namespace NBShaderEditor
                 }
 
             });
+           
 
             if (_fxLightMode != FxLightMode.SixWay||_helper.ResetTool.IsInitResetData)
             {
@@ -624,7 +625,6 @@ namespace NBShaderEditor
                                 _helper.DrawSlider("法线强度", "_BumpScale", rangePropertyName:"BumpScaleRangeVec");
                             });
                     });
-
                 _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2MatCapToggle, 5, GetAnimBoolIndex(5),
                     "MatCap模拟材质", "_MatCapToggle", shaderKeyword: "_MATCAP", drawBlock: isMatCapToggle =>
                     {
@@ -632,6 +632,7 @@ namespace NBShaderEditor
                         // matEditor.ColorProperty(_helper.GetProperty("_MatCapColor"), "MatCap颜色");
                         _helper.DrawVector4Component("MatCap相加到相乘过渡", "_MatCapInfo", "x", true);
                     });
+              
             }
             else if (_fxLightMode == FxLightMode.SixWay)
             {
