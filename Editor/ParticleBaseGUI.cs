@@ -56,7 +56,7 @@ namespace NBShaderEditor
 
             if (isInit)
             {
-                CacheRenderersUsingThisMaterial(mats[0],0);
+                CacheRenderersUsingThisMaterial(mats[0],0);//应该只Cache这一次就可以了。
                 isInit = false;
             }
 
@@ -65,57 +65,55 @@ namespace NBShaderEditor
 
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMeshOption, 3, GetAnimBoolIndex(3), "模式设置",
                 () => DrawMeshOptions(),false);
+                
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitBaseOption, 3, GetAnimBoolIndex(3), "基本全局功能",
-                () => DrawBaseOptions(),false);
+               () => DrawBaseOptions(),false);
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitMainTexOption, 3, GetAnimBoolIndex(3), "主贴图功能",
-                () => DrawMainTexOptions());
+               () => DrawMainTexOptions());
 
             if (_uiEffectEnabled == 0 || _helper.ResetTool.IsInitResetData)
             {
-                _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBit1LightOption, 4, GetAnimBoolIndex(4),
-                    "光照功能", () => DrawLightOptions());
+               _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBit1LightOption, 4, GetAnimBoolIndex(4),
+                   "光照功能", () => DrawLightOptions());
             }
 
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBitFeatureOption, 3, GetAnimBoolIndex(3), "特别功能",
-                () => DrawFeatureOptions());
+               () => DrawFeatureOptions());
             _helper.DrawBigBlockFoldOut(W9ParticleShaderFlags.foldOutBit1TaOption, 4, GetAnimBoolIndex(4), "TA调试",
-                () => DrawTaOptions());
-            
+               () => DrawTaOptions());
+
             EditorGUIUtility.labelWidth = 0f;
 
             if (mats.Count == 1)
             {
-                if (_meshSourceMode == MeshSourceMode.Particle || _meshSourceMode == MeshSourceMode.UIParticle)
-                {
-                    DoVertexStreamsArea(mats[0], m_ParticleRenderersUsingThisMaterial, 0); //填充stream和stremList
-                    mats[0].EnableKeyword("_CUSTOMDATA");
-                }
-                else
-                {
-                    mats[0].DisableKeyword("_CUSTOMDATA");
-                }
+               if (_meshSourceMode == MeshSourceMode.Particle || _meshSourceMode == MeshSourceMode.UIParticle)
+               {
+                   DoVertexStreamsArea(mats[0], m_ParticleRenderersUsingThisMaterial, 0); //填充stream和stremList
+                   mats[0].EnableKeyword("_CUSTOMDATA");
+               }
+               else
+               {
+                   mats[0].DisableKeyword("_CUSTOMDATA");
+               }
             }
 
             if (EditorGUI.EndChangeCheck())
             {
-                CacheRenderersUsingThisMaterial(mats[0], 0);
-               
+               DoAfterDraw();
 
-                DoAfterDraw();
-                
-                //多选状态下同步ShaderFlag
-                if (mats.Count > 1)
-                {
-                    for (int i = 1; i < mats.Count; i++)
-                    {
-                        mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId,
-                            mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId));
-                        mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId1,
-                            mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId1));
-                        mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId2,
-                            mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId2));
-                    }
-                }
+               //多选状态下同步ShaderFlag
+               if (mats.Count > 1)
+               {
+                   for (int i = 1; i < mats.Count; i++)
+                   {
+                       mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId,
+                           mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId));
+                       mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId1,
+                           mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId1));
+                       mats[i].SetInteger(W9ParticleShaderFlags.foldOutFlagId2,
+                           mats[0].GetInteger(W9ParticleShaderFlags.foldOutFlagId2));
+                   }
+               }
             }
         }
 
@@ -2195,7 +2193,7 @@ namespace NBShaderEditor
             if (renderers != null)
             {
                 m_RenderersUsingThisMaterial = renderers.ToList();
-                _helper.renderersUsingThisMaterial = m_RenderersUsingThisMaterial;
+                _helper.InitRenderers(m_RenderersUsingThisMaterial);
             }
             // #endif
             foreach (Renderer renderer in renderers)
