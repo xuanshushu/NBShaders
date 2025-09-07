@@ -906,44 +906,99 @@ namespace NBShaderEditor
                     {
                         _noiseEnabled = isToggle.floatValue > 0.5f ? 1 : 0;
                     }
-
-                    _helper.DrawToggle("用于屏幕扰动", "_ScreenDistortModeToggle", shaderKeyword: "_SCREEN_DISTORT_MODE",
-                        drawEndChangeCheck: isScreenDistortToggle =>
+                    _helper.DrawSlider("整体扭曲强度", "_NoiseIntensity", rangePropertyName:"_NoiseIntensityRangeVec");
+                    DrawCustomDataSelect("扭曲强度自定义曲线", W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_NOISE_INTENSITY, 1);
+                    _helper.DrawPopUp("屏幕扰动模式","_ScreenDistortModeToggle",screenDistortModeNames,drawBlock:
+                        scrDistortModeProp =>
                         {
-                            if (!isScreenDistortToggle.hasMixedValue && isScreenDistortToggle.floatValue > 0.5f)
-                            {
-                                //强制设置为Clamp模式。
-                                for (int i = 0; i < mats.Count; i++)
+                            EditorGUI.indentLevel++;
+                            _helper.DrawSlider("屏幕扭曲强度", "_ScreenDistortIntensity", rangePropertyName:"_ScreenDistortIntensityRangeVec");
+                            _helper.DrawToggle("关闭主材质Pass","_DisableMainPassToggle",drawEndChangeCheck:
+                                disableMainPassToggleProp =>
                                 {
-                                    shaderFlags[i].SetFlagBits(W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_BASEMAP,
-                                        index: 2);
+                                    for (int i = 0; i < mats.Count; i++)
+                                    {
+                                        mats[i].SetShaderPassEnabled("UniversalForward",disableMainPassToggleProp.floatValue < 0.5f);
+                                    }
+                                });
+                            EditorGUI.indentLevel--;
+                            
+                        },drawOnValueChangedBlock:
+                        screenDistortModeProp =>
+                        {
+                            ScreenDistortMode screenDistortMode = (ScreenDistortMode)screenDistortModeProp.floatValue;
+                            for (int i = 0; i < mats.Count; i++)
+                            {
+                                switch (screenDistortMode)
+                                {
+                                    case ScreenDistortMode.None:
+                                        mats[i].SetShaderPassEnabled("NBCameraOpaqueDistortPass", false);
+                                        mats[i].SetShaderPassEnabled("NBDeferredDistortPass", false);
+                                        break;
+                                    case ScreenDistortMode.CameraOpaqueDistort:
+                                        mats[i].SetShaderPassEnabled("NBCameraOpaqueDistortPass", true);
+                                        mats[i].SetShaderPassEnabled("NBDeferredDistortPass", false);
+                                        break;
+                                    case ScreenDistortMode.DeferredDistort:
+                                        mats[i].SetShaderPassEnabled("NBCameraOpaqueDistortPass", false);
+                                        mats[i].SetShaderPassEnabled("NBDeferredDistortPass", true);
+                                        break;
+                                    //在OnvalueChange后不会有Mixed的情况
                                 }
                             }
                         });
 
-                    EditorGUILayout.LabelField("扭曲贴图RG双通道则为FlowMap,FlowMap贴图设置应该去掉sRGB勾选");
-                    _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitNoiseMap, 3, GetAnimBoolIndex(3), "扭曲贴图",
-                        "_NoiseMap", drawWrapMode: true, flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_NOISEMAP,
-                        flagIndex: 2, drawBlock:
-                        theNoiseMap =>
+                    _helper.DrawPopUp("扭曲模式","_DistortMode",distortModeNames,drawBlock: modeProp =>
+                    {
+                        EditorGUI.indentLevel++;
+                        if((!modeProp.hasMixedValue && Mathf.Approximately(modeProp.floatValue,0))||_helper.ResetTool.IsInitResetData)
                         {
-                            DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeNoiseMap, 4, "扭曲贴图UV来源",
-                                W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_NOISE_MAP, 0, theNoiseMap);
-                            _helper.DrawSlider("主贴图扭曲强度", "_TexDistortion_intensity", -1.0f, 1.0f);
-                            DrawCustomDataSelect("扭曲强度自定义曲线",
-                                W9ParticleShaderFlags.FLAGBIT_POS_1_CUSTOMDATA_NOISE_INTENSITY, 1);
-                            _helper.DrawVector4In2Line("_DistortionDirection", "扭曲方向强度", true);
-                            DrawCustomDataSelect("扭曲方向强度X自定义曲线",
-                                W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_X, 2);
-                            DrawCustomDataSelect("扭曲方向强度Y自定义曲线",
-                                W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_Y, 2);
+                            EditorGUILayout.LabelField("扭曲贴图RG双通道则为FlowMap,FlowMap贴图设置应该去掉sRGB勾选");
+                            _helper.DrawTextureFoldOut(W9ParticleShaderFlags.foldOutBitNoiseMap, 3, GetAnimBoolIndex(3), "扭曲贴图",
+                                "_NoiseMap", drawWrapMode: true, flagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_NOISEMAP,
+                                flagIndex: 2, drawBlock:
+                                theNoiseMap =>
+                                {
+                                    DrawUVModeSelect(W9ParticleShaderFlags.foldOutBit1UVModeNoiseMap, 4, "扭曲贴图UV来源",
+                                        W9ParticleShaderFlags.FLAG_BIT_UVMODE_POS_0_NOISE_MAP, 0, theNoiseMap);
+              
+                                    _helper.DrawVector4In2Line("_DistortionDirection", "扭曲方向强度", true);
+                                    DrawCustomDataSelect("扭曲方向强度X自定义曲线",
+                                        W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_X, 2);
+                                    DrawCustomDataSelect("扭曲方向强度Y自定义曲线",
+                                        W9ParticleShaderFlags.FLAGBIT_POS_2_CUSTOMDATA_NOISE_DIRECTION_Y, 2);
 
-                            _helper.DrawSlider("扭曲旋转", "_NoiseMapUVRotation", 0f, 360f);
-                            _helper.DrawVector4In2Line("_NoiseOffset", "扭曲偏移速度", true);
-                            _helper.DrawToggle("0.5为中值，双向扭曲", "_DistortionBothDirection_Toggle",
-                                flagBitsName: W9ParticleShaderFlags.FLAG_BIT_PARTICLE_NOISEMAP_NORMALIZEED_ON,
-                                isIndentBlock: false);
-                        });
+                                    _helper.DrawSlider("扭曲旋转", "_NoiseMapUVRotation", 0f, 360f);
+                                    _helper.DrawVector4In2Line("_NoiseOffset", "扭曲偏移速度", true);
+                                    _helper.DrawToggle("0.5为中值，双向扭曲", "_DistortionBothDirection_Toggle",
+                                        flagBitsName: W9ParticleShaderFlags.FLAG_BIT_PARTICLE_NOISEMAP_NORMALIZEED_ON,
+                                        isIndentBlock: false);
+                                });
+                        }
+                        
+                        if((!modeProp.hasMixedValue && Mathf.Approximately(modeProp.floatValue,1))||_helper.ResetTool.IsInitResetData)
+                        { 
+                            _helper.DrawSlider("折射率", "_RefractionIOR", 0f, 5f);
+                            
+                        }
+                        EditorGUI.indentLevel--;
+                        
+                    },drawOnValueChangedBlock: modePropOnValueChanged =>
+                    {
+                        for (int i = 0; i < mats.Count; i++)
+                        {
+                            if (Mathf.Approximately(modePropOnValueChanged.floatValue, 1))
+                            {
+                                mats[i].EnableKeyword("_DISTORT_REFRACTION");
+                            }
+                            else
+                            {
+                                mats[i].DisableKeyword("_DISTORT_REFRACTION");
+                            }
+                        }
+                    });
+
+                  
 
                     _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBitNoiseMaskToggle, 3, GetAnimBoolIndex(3),
                         "扭曲遮罩", "_noiseMaskMap_Toggle",
@@ -1888,6 +1943,27 @@ namespace NBShaderEditor
         {
             "相乘Multiply",
             "相加Add"
+        };
+
+        public enum ScreenDistortMode
+        {
+            None = 0,
+            DeferredDistort = 1,
+            CameraOpaqueDistort = 2,
+            Mixed = -1
+        }
+        
+        private string[] screenDistortModeNames =
+        {
+            "不扰动屏幕",
+            "全部扰动(后处理扰动)",
+            "仅影响场景(半透明前扰动)"
+        };
+
+        private string[] distortModeNames =
+        {
+            "扰动贴图",
+            "折射"
         };
         
         void DoAfterDraw()

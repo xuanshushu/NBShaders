@@ -2,6 +2,7 @@
     #define PARTICLESUNLITINPUT
     
     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+    #include "../HLSL/EffectFlags.hlsl"
    
 
   //---------------particleInput-------------------
@@ -37,9 +38,13 @@
     half _BaseMapUVRotationSpeed;
     float _MaskMapUVRotation;
     float _NoiseMapUVRotation;
+    half _ScreenDistortIntensity;
+    half _NoiseIntensity;
+    half _RefractionIOR;
     half _uvRapSoft;
     half4 _EmissionMapColor;
     half _EmissionMapColorIntensity;
+    
 
     //--------------光照部分-------------
     float4 _BumpTex_ST;
@@ -235,6 +240,8 @@
     SamplerState sampler_linear_RepeatU_ClampV;
     SamplerState sampler_linear_ClampU_RepeatV;
 
+
+
     half4 SampleTexture2D(Texture2D tex,float2 uv,SAMPLER( textureSampler),bool sampleLOD = false,int lod = 0)
     {
         if (sampleLOD)
@@ -251,7 +258,22 @@
 
     half4 SampleTexture2DWithWrapFlags(Texture2D tex,float2 uv,uint bits,bool sampleLOD = false,int lod = 0)
     {
-        const int wrapMode = CheckLocalWrapFlags(bits);
+        #ifdef _CAMERA_OPAQUE_DISTORT_PASS
+        int wrapMode;
+        if (bits == FLAG_BIT_WRAPMODE_BASEMAP)
+        {
+            wrapMode = 1;
+        }
+        else
+        {
+            wrapMode = CheckLocalWrapFlags(bits);
+        }
+
+        #else
+            const int wrapMode = CheckLocalWrapFlags(bits);
+        #endif
+        
+        
         #if defined(SHADER_TARGET_GLSL)
         switch (wrapMode)
         {
@@ -301,10 +323,6 @@
         if (bits == 2) return color.z;
         return color.w;
     }
- 
-
-    #include "../HLSL/EffectFlags.hlsl"
-
 
     samplerCUBE _FresnelHDRITex;
     sampler2D _MainTex;
@@ -334,14 +352,13 @@
         Texture2D _SixWayEmissionRamp;
     #endif
 
-    #ifdef _SCREEN_DISTORT_MODE
-        Texture2D _ScreenColorCopy1;
+    #ifdef _CAMERA_OPAQUE_DISTORT_PASS
+        Texture2D _CameraOpaqueTexture;
     #endif
 
-#ifdef _MATCAP
-
-#endif
-Texture2D _MatCapTex;
+    #ifdef _MATCAP
+    Texture2D _MatCapTex;
+    #endif
 
     // Pre-multiplied alpha helper
     #if defined(_ALPHAPREMULTIPLY_ON)  //if( blend: One OneMinusSrcAlpha)
@@ -1020,6 +1037,24 @@ Texture2D _MatCapTex;
         return false;
     }
 
+    float3 CustomRefract(float3 incident, float3 normal, float eta)
+    {
+        float N_dot_I = dot(normal, incident);
+        float k = 1.0f - eta * eta * (1.0f - N_dot_I * N_dot_I);
+
+        // 检查全内反射
+        if (k < 0.0)
+        {
+            // 全内反射时返回零向量
+            return float3(0, 0, 0);
+        }
+        else
+        {
+            // 计算折射方向
+            return eta * incident - (eta * N_dot_I + sqrt(k)) * normal;
+        }
+    }
+
     Texture2D _ParallaxMapping_Map;
 
     half2 ParallaxMappingSimple(half2 texCoords, half3 viewDir)
@@ -1169,9 +1204,9 @@ Texture2D _MatCapTex;
 
         float4 normalWSAndAnimBlend: TEXCOORD10;
         
-        float3 fresnelViewDir :TEXCOORD11;
+        // float3 fresnelViewDir :TEXCOORD11;
         
-        float3 viewDirWS :TEXCOORD13;
+        // float3 viewDirWS :TEXCOORD13;
         float4 texcoordMaskMap2 : TEXCOORD14;
 
         #ifdef _PARALLAX_MAPPING
@@ -1211,7 +1246,7 @@ Texture2D _MatCapTex;
         {
             return true;
         }
-        #if defined(_DEPTH_DECAL) || defined(_PARALLAX_MAPPING) || defined(_SCREEN_DISTORT_MODE)
+        #if defined(_DEPTH_DECAL) || defined(_PARALLAX_MAPPING) || defined(_SCREEN_DISTORT_MODE) || defined(_CAMERA_OPAQUE_DISTORT_PASS)
             return true;
         #endif
         return false;
@@ -1222,30 +1257,30 @@ Texture2D _MatCapTex;
 
 
 
-    void InitializeInputData(VaryingsParticle input, half3 normalTS, out InputData inputData)
+    void InitializeInputData(VaryingsParticle input, half3 viewDirWS, out InputData inputData)
     {
         inputData = (InputData)0;
 
     #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
         inputData.positionWS = input.positionWS;
     #endif
-
-        half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
-    #if defined(_NORMALMAP) || defined(_DETAIL)
-        float sgn = input.tangentWS.w;      // should be either +1 or -1
-        float3 bitangent = sgn * cross(input.normalWSAndAnimBlend.xyz, input.tangentWS.xyz);
-        half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWSAndAnimBlend.xyz);
-
-        #if defined(_NORMALMAP)
-        inputData.tangentToWorld = tangentToWorld;
-        #endif
-        inputData.normalWS = TransformTangentToWorld(normalTS, tangentToWorld);
-    #else
-        inputData.normalWS = input.normalWSAndAnimBlend.xyz;
-    #endif
-
-        inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
-        inputData.viewDirectionWS = viewDirWS;
+    //Normal转到外面执行
+    //     half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
+    // #if defined(_NORMALMAP) || defined(_DETAIL)
+    //     float sgn = input.tangentWS.w;      // should be either +1 or -1
+    //     float3 bitangent = sgn * cross(input.normalWSAndAnimBlend.xyz, input.tangentWS.xyz);
+    //     half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWSAndAnimBlend.xyz);
+    //
+    //     #if defined(_NORMALMAP)
+    //     inputData.tangentToWorld = tangentToWorld;
+    //     #endif
+    //     inputData.normalWS = TransformTangentToWorld(normalTS, tangentToWorld);
+    // #else
+    //     inputData.normalWS = input.normalWSAndAnimBlend.xyz;
+    // #endif
+    //
+    //     inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
+    inputData.viewDirectionWS = viewDirWS;
 
     #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
         inputData.shadowCoord = input.shadowCoord;

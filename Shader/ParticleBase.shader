@@ -106,11 +106,7 @@
         [HideInInspector] _TimeMode("__TimeMode",float) = 0.0
     	
     	_StencilWithoutPlayerToggle("剔除主角色开关",Float) = 0.0
-    	
-    	
-    	
-        
-        
+ 
         // MaskMap-----------
     	_MaskRefineToggle("遮罩整体调整开关",Float) = 0
     	_MaskRefineVec("遮罩整体调整：x:Pow,y:相乘,z:相加",Vector) = (1,1,0,0)
@@ -163,13 +159,19 @@
         
         // 噪波 --------------
         //[Toggle(_NOISEMAP)]_N ("NOISEMAP?", float) =0
+        [HideInInspector] _ScreenDistortModeToggle("_ScreenDistortModeToggle",Float) = 0
+        [HideInInspector] _DisableMainPassToggle("_ScreenDistortModeToggle",Float) = 0
+        [HideInInspector] _DistortMode("_DistortMode",Float) = 0
         [HideInInspector] _noisemapEnabled ("__noisemapEnabled", Float) = 0.0
         [HideInInspector] _noiseMaskMap_Toggle ("__noiseMaskMap_Toggle", Float) = 0.0
+    	_RefractionIOR("折射率",Float) = 1.5
         _NoiseMap ("扭曲贴图 xy:UV缩放 zw:UV偏移", 2D) = "white" { }
         _NoiseMaskMap ("扭曲遮罩贴图 xy:UV缩放 zw:UV偏移", 2D) = "white" { }
         _NoiseMapUVRotation("扭曲旋转",Range(0,360)) = 0
         _NoiseOffset ("xy:扭曲偏移速度 ", vector) = (0, 0, 0, 0)//w分量为本地uv坐标到世界坐标的变化
-    	_TexDistortion_intensity ("扭曲强度", float) = 0.5
+    	_TexDistortion_intensity ("主贴图扭曲强度", float) = 0.5
+    	_NoiseIntensity("整体扭曲强度",Float) = 1
+    	_ScreenDistortIntensity("屏幕扭曲强度",Float) = 1
         _DistortionDirection ("扭曲方向xy, 色散强度z", vector) = (1,1,0,0)
         _Distortion_Choraticaberrat_Toggle("扭曲色散开关_Toggle",Float) = 0 
         _Distortion_Choraticaberrat_WithNoise_Toggle("色散受扭曲影响_Toggle",Float) = 1
@@ -326,7 +328,6 @@
         [HideInInspector] _IntersectRadius("__IntersectRadius_ignore",Float) = 0.3
         [HideInInspector] _IntersectColor("__IntersectColor_ignore",Color) = (1,1,1,1)
         
-        [HideInInspector] _ScreenDistortModeToggle("_ScreenDistortModeToggle",Float) = 0
         
         // Editmode props  编辑模式下的PropFlags？
         [HideInInspector] _QueueBias ("Queue偏移_QueueBias", Float) =0
@@ -382,6 +383,8 @@
     	Dissolve2XRangeVec("_Dissolve_Vec2.x",Vector) = (0,1,0,0)
     	Dissolve2YRangeVec("_Dissolve_Vec2.y",Vector) = (0,1,0,0)
     	AlphaAllRangeVec("_AlphaAll",Vector) = (0,1,0,0)
+    	_NoiseIntensityRangeVec("_NoiseIntensity",Vector) = (0,1,0,0)
+    	_ScreenDistortIntensityRangeVec("_ScreenDistortIntensity",Vector) = (0,1,0,0)
 //        _offsetUnits("深度偏移单位距离-ignore", range(-2000,2000)) = 0
     }
     SubShader
@@ -390,11 +393,11 @@
         
         Stencil
         {
-                Ref [_Stencil]
-                Comp [_StencilComp]
-                Pass [_StencilOp]
-                ReadMask [_StencilReadMask]
-                WriteMask [_StencilWriteMask]
+            Ref [_Stencil]
+            Comp [_StencilComp]
+            Pass [_StencilOp]
+            ReadMask [_StencilReadMask]
+            WriteMask [_StencilWriteMask]
         }
 
         //BlendOp[_BlendOp]   //考虑注释~
@@ -432,7 +435,8 @@
             
             // -------------------------------------
             // Material Keywords
-            #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
+            // #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
+            #pragma shader_feature_local _ _DISTORT_REFRACTION
             #pragma shader_feature_local _ _MASKMAP_ON
             // #pragma shader_feature_local _MASKMAP
             // #pragma shader_feature_local _MASKMAP2
@@ -452,7 +456,7 @@
             // #pragma multi_compile _ _UIPARTICLE_ON//用于UIParticle组件动态更改参数//暂时注释掉，觉得没什么意义
             #pragma multi_compile _ SOFT_UI_FRAME EVALUATE_SH_MIXED EVALUATE_SH_VERTEX//用于UI软蒙版
             
-            #pragma shader_feature_local _PARCUSTOMDATA_ON
+            // #pragma shader_feature_local _PARCUSTOMDATA_ON
 
             //用于特效层关键字
             // #pragma shader_feature_local  _UIEFFECT_ON
@@ -541,7 +545,8 @@
  
             // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
             
-            #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
+            // #pragma shader_feature_local _ _SCREEN_DISTORT_MODE
+            #pragma shader_feature_local _ _DISTORT_REFRACTION
             #pragma shader_feature_local _ _MASKMAP_ON
             // #pragma shader_feature_local _MASKMAP
             // #pragma shader_feature_local _MASKMAP2
@@ -559,8 +564,7 @@
             
             
             #pragma multi_compile_local _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS //UI 2D遮罩
-            // #pragma shader_feature_local _ _CH_XIANXING _CH_JINGXIANG  _CH_SELF   //线性擦除  径向擦除  mask擦除
-            #pragma shader_feature_local _PARCUSTOMDATA_ON
+            // #pragma shader_feature_local _PARCUSTOMDATA_ON
 
             //用于特效层关键字
             // #pragma shader_feature_local  _UIEFFECT_ON
@@ -598,6 +602,215 @@
             #pragma shader_feature_local _ _MATCAP
             #pragma shader_feature_local _ _SPECULAR_COLOR
             #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
+            
+            // -------------------------------------
+            // Unity defined keywords
+            // 之后进行优化时再说。
+            #pragma multi_compile_fog
+            // #define FOG_EXP2 1 
+            
+            #pragma vertex vertParticleUnlit
+            #pragma fragment fragParticleUnlit
+            
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // The DeclareDepthTexture.hlsl file contains utilities for sampling the Camera
+            // depth texture.
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+            
+            #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
+            #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"
+            
+            
+            ENDHLSL
+            
+        }
+
+ // ------------------------------------------------------------------
+        //  Distort pass.
+        Pass
+        {
+            Tags{
+              "LightMode" = "NBCameraOpaqueDistortPass" 
+			} //Queue设置是希望特效渲染在场景透明物体前面
+            offset [_offsetFactor], [_offsetUnits]
+            Cull[_Cull]
+
+            HLSLPROGRAM
+            #define PARTICLE
+            //20240228 target3.0 顶点着色器限制16个输出。提高版本
+            #pragma target 4.5
+            
+            // -------------------------------------
+            // Material Keywords
+ 
+            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            
+            #define _SCREEN_DISTORT_MODE
+            #define _CAMERA_OPAQUE_DISTORT_PASS
+            #pragma shader_feature_local _ _DISTORT_REFRACTION
+            #pragma shader_feature_local _ _MASKMAP_ON
+            // #pragma shader_feature_local _MASKMAP
+            // #pragma shader_feature_local _MASKMAP2
+            //#pragma shader_feature_local _NOISEMAP
+            #pragma shader_feature_local _NOISEMAP
+            //#pragma shader_feature_local _EMISSION   //流光
+            // #pragma shader_feature_local _EMISSION
+            //#pragma shader_feature_local _ _DISSOLVE    //溶解
+            #pragma shader_feature_local _DISSOLVE
+                        //后续Test类的关键字要找机会排除
+            #pragma shader_feature_local _DISSOLVE_EDITOR_TEST
+            // #pragma shader_feature_local  _COLORMAPBLEND//颜色渐变
+            // #pragma  shader_feature_local  _COLOR_RAMP//颜色映射
+            
+            
+            
+            // #pragma multi_compile_local _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS //UI 2D遮罩
+            // #pragma shader_feature_local _PARCUSTOMDATA_ON
+
+            //用于特效层关键字
+            // #pragma shader_feature_local  _UIEFFECT_ON
+            
+            #pragma shader_feature_local _ FRESNEL_CUBEMAP FRESNEL_REFLECTIONPROBE
+
+            
+            // #pragma multi_compile _ _UIPARTICLE_ON//用于UIParticle组件动态更改参数//暂时注释掉，觉得没什么意义
+            #pragma multi_compile _ SOFT_UI_FRAME EVALUATE_SH_MIXED EVALUATE_SH_VERTEX//用于UI软蒙版
+            // -------------------------------------
+            // Particle Keywords
+            #pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
+            #pragma shader_feature_local _ALPHATEST_ON
+            //#pragma shader_feature_local _ _COLOROVERLAY_ON _COLORCOLOR_ON _COLORADDSUBDIFF_ON  //粒子颜色和材质颜色的混合运算  暂时先不要了
+            #pragma shader_feature_local _FLIPBOOKBLENDING_ON
+            #pragma shader_feature_local _SOFTPARTICLES_ON
+            // #pragma shader_feature_local _OCCLUDEOPACITY_ON
+            // #pragma shader_feature_local _ _SATURABILITY_ON
+
+            //UnscaleTime用于接收项目传的公开不受缩放影响的Time值
+            #pragma shader_feature_local _UNSCALETIME
+            //scriptableTime用于程序每帧传值
+            #pragma shader_feature_local _SCRIPTABLETIME
+            //#pragma shader_feature_local _DISTORTION_ON
+            #pragma shader_feature_local _NOISEMAP_NORMALIZEED
+
+            #pragma shader_feature_local _DEPTH_DECAL
+            // #pragma shader_feature_local _PARALLAX_MAPPING
+
+            #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
+
+            //LIGHTING
+			// #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_HALF_LAMBERT _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY 
+            #pragma shader_feature_local _ _NORMALMAP
+            // #pragma shader_feature_local _ _MATCAP
+            // #pragma shader_feature_local _ _SPECULAR_COLOR
+            // #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
+            
+            // -------------------------------------
+            // Unity defined keywords
+            // 之后进行优化时再说。
+            #pragma multi_compile_fog
+            // #define FOG_EXP2 1 
+            
+            #pragma vertex vertParticleUnlit
+            #pragma fragment fragParticleUnlit
+            
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // The DeclareDepthTexture.hlsl file contains utilities for sampling the Camera
+            // depth texture.
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+            
+            #include "Packages/com.xuanxuan.render.utility/Shader/HLSL/XuanXuan_Utility.hlsl"
+            #include "HLSL/ParticlesUnlitForwardPassNew.hlsl"
+            
+            
+            ENDHLSL
+            
+        }
+
+// ------------------------------------------------------------------
+        //  Distort pass.
+        Pass
+        {
+            Tags{
+              "LightMode" = "NBDeferredDistortPass" 
+			} //Queue设置是希望特效渲染在场景透明物体前面
+            offset [_offsetFactor], [_offsetUnits]
+            Cull[_Cull]
+
+            HLSLPROGRAM
+            #define PARTICLE
+            //20240228 target3.0 顶点着色器限制16个输出。提高版本
+            #pragma target 4.5
+            
+            // -------------------------------------
+            // Material Keywords
+ 
+            // #pragma enable_d3d11_debug_symbols  // 保留D3D11调试符号
+            
+			#define _SCREEN_DISTORT_MODE
+            #define _DEFERRED_DISTORT_PASS
+            #pragma shader_feature_local _ _DISTORT_REFRACTION
+            
+            #pragma shader_feature_local _ _MASKMAP_ON
+            // #pragma shader_feature_local _MASKMAP
+            // #pragma shader_feature_local _MASKMAP2
+            //#pragma shader_feature_local _NOISEMAP
+            #pragma shader_feature_local _NOISEMAP
+            //#pragma shader_feature_local _EMISSION   //流光
+            // #pragma shader_feature_local _EMISSION
+            //#pragma shader_feature_local _ _DISSOLVE    //溶解
+            #pragma shader_feature_local _DISSOLVE
+                        //后续Test类的关键字要找机会排除
+            #pragma shader_feature_local _DISSOLVE_EDITOR_TEST
+            // #pragma shader_feature_local  _COLORMAPBLEND//颜色渐变
+            // #pragma  shader_feature_local  _COLOR_RAMP//颜色映射
+            
+            
+            
+            // #pragma multi_compile_local _ UNITY_UI_CLIP_RECT _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS //UI 2D遮罩
+            // #pragma shader_feature_local _PARCUSTOMDATA_ON
+
+            //用于特效层关键字
+            // #pragma shader_feature_local  _UIEFFECT_ON
+            
+            #pragma shader_feature_local _ FRESNEL_CUBEMAP FRESNEL_REFLECTIONPROBE
+
+            
+            // #pragma multi_compile _ _UIPARTICLE_ON//用于UIParticle组件动态更改参数//暂时注释掉，觉得没什么意义
+            #pragma multi_compile _ SOFT_UI_FRAME EVALUATE_SH_MIXED EVALUATE_SH_VERTEX//用于UI软蒙版
+            // -------------------------------------
+            // Particle Keywords
+            #pragma shader_feature_local _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON     //设置alpah Add 。。组合
+            #pragma shader_feature_local _ALPHATEST_ON
+            //#pragma shader_feature_local _ _COLOROVERLAY_ON _COLORCOLOR_ON _COLORADDSUBDIFF_ON  //粒子颜色和材质颜色的混合运算  暂时先不要了
+            #pragma shader_feature_local _FLIPBOOKBLENDING_ON
+            #pragma shader_feature_local _SOFTPARTICLES_ON
+            // #pragma shader_feature_local _OCCLUDEOPACITY_ON
+            // #pragma shader_feature_local _ _SATURABILITY_ON
+
+            //UnscaleTime用于接收项目传的公开不受缩放影响的Time值
+            #pragma shader_feature_local _UNSCALETIME
+            //scriptableTime用于程序每帧传值
+            #pragma shader_feature_local _SCRIPTABLETIME
+            //#pragma shader_feature_local _DISTORTION_ON
+            #pragma shader_feature_local _NOISEMAP_NORMALIZEED
+
+            #pragma shader_feature_local _DEPTH_DECAL
+            // #pragma shader_feature_local _PARALLAX_MAPPING
+
+            #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
+
+            //LIGHTING
+			// #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_HALF_LAMBERT _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY 
+            #pragma shader_feature_local _ _NORMALMAP
+            // #pragma shader_feature_local _ _MATCAP
+            // #pragma shader_feature_local _ _SPECULAR_COLOR
+            // #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
             
             // -------------------------------------
             // Unity defined keywords
@@ -680,7 +893,7 @@
             #pragma shader_feature_local _ALPHATEST_ON
             //#pragma shader_feature_local _ _COLOROVERLAY_ON _COLORCOLOR_ON _COLORADDSUBDIFF_ON  //粒子颜色和材质颜色的混合运算  暂时先不要了
             #pragma shader_feature_local _FLIPBOOKBLENDING_ON
-            #pragma shader_feature_local _SOFTPARTICLES_ON
+            // #pragma shader_feature_local _SOFTPARTICLES_ON
             // #pragma shader_feature_local _OCCLUDEOPACITY_ON
             // #pragma shader_feature_local _ _SATURABILITY_ON
 
@@ -691,17 +904,17 @@
             //#pragma shader_feature_local _DISTORTION_ON
             #pragma shader_feature_local _NOISEMAP_NORMALIZEED
 
-            #pragma shader_feature_local _DEPTH_DECAL
-            #pragma shader_feature_local _PARALLAX_MAPPING
+            // #pragma shader_feature_local _DEPTH_DECAL
+            // #pragma shader_feature_local _PARALLAX_MAPPING
 
             #pragma shader_feature_local _STENCIL_WITHOUT_PLAYER
 
             //LIGHTING
-			#pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_HALF_LAMBERT _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY 
-            #pragma shader_feature_local _ _NORMALMAP
-            #pragma shader_feature_local _ _MATCAP
-            #pragma shader_feature_local _ _SPECULAR_COLOR
-            #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
+			// #pragma shader_feature_local _FX_LIGHT_MODE_UNLIT _FX_LIGHT_MODE_BLINN_PHONG _FX_LIGHT_MODE_HALF_LAMBERT _FX_LIGHT_MODE_PBR _FX_LIGHT_MODE_SIX_WAY 
+				#pragma shader_feature_local _ _NORMALMAP
+   //          #pragma shader_feature_local _ _MATCAP
+   //          #pragma shader_feature_local _ _SPECULAR_COLOR
+   //          #pragma shader_feature_local _ VFX_SIX_WAY_ABSORPTION
             
             // -------------------------------------
             // Unity defined keywords

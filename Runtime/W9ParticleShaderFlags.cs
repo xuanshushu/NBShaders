@@ -241,6 +241,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutBit2DissolveLine= 1 << 3;
     public const int foldOutBit2BaseBackColor= 1 << 4;
     public const int foldOutBit2MaskRefine= 1 << 5;
+    public const int foldOutBit2ScreenDistortMode = 1 << 6;
 
 
     #region CustomDataCodes
