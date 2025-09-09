@@ -172,6 +172,11 @@
     	_TexDistortion_intensity ("主贴图扭曲强度", float) = 0.5
     	_NoiseIntensity("整体扭曲强度",Float) = 1
     	_ScreenDistortIntensity("屏幕扭曲强度",Float) = 1
+    	
+    	_ScreenDistortAlphaRefineToggle("屏幕扭曲Alpha调整开关",Float) = 0
+    	_ScreenDistortAlphaPow("屏幕扭曲AlphaPow",Float) = 1
+    	_ScreenDistortAlphaMulti("屏幕扭曲Alpha相乘",Float) = 1
+    	_ScreenDistortAlphaAdd("屏幕扭曲Alpha相加",Float) = 0
         _DistortionDirection ("扭曲方向xy, 色散强度z", vector) = (1,1,0,0)
         _Distortion_Choraticaberrat_Toggle("扭曲色散开关_Toggle",Float) = 0 
         _Distortion_Choraticaberrat_WithNoise_Toggle("色散受扭曲影响_Toggle",Float) = 1

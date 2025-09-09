@@ -127,9 +127,8 @@
                 }
             #endif
             ParticleUVs particleUVs = (ParticleUVs)0;
-            float2 screenUV = 0;
             
-            ParticleProcessUV(input.texcoords, specialUVInTexcoord3,particleUVs,output.VaryingsP_Custom1,output.VaryingsP_Custom2,screenUV,output.positionOS.xyz);
+            ParticleProcessUV(input.texcoords, specialUVInTexcoord3,particleUVs,output.VaryingsP_Custom1,output.VaryingsP_Custom2,output.positionOS.xyz);
             output.texcoord2AndSpecialUV.xy = particleUVs.animBlendUV;
             output.texcoord2AndSpecialUV.zw= particleUVs.specUV;
             output.texcoord.xy = particleUVs.mainTexUV;
@@ -241,6 +240,7 @@
             uv.xy = decalUV;
         #endif
 
+        float2 MainTex_UV;
         float3 blendUv;
         blendUv.xy = input.texcoord2AndSpecialUV.xy;
         blendUv.z = input.normalWSAndAnimBlend.w;
@@ -270,8 +270,8 @@
             
             #endif
             ParticleUVs particleUVs = (ParticleUVs)0;
-            ParticleProcessUV(uv,specialUVInTexcoord3,particleUVs,input.VaryingsP_Custom1,input.VaryingsP_Custom2,screenUV,input.positionOS.xyz);
-            uv.xy = particleUVs.mainTexUV;
+            ParticleProcessUV(uv,specialUVInTexcoord3,particleUVs,input.VaryingsP_Custom1,input.VaryingsP_Custom2,input.positionOS.xyz);
+            MainTex_UV.xy = particleUVs.mainTexUV;
             blendUv.xy = particleUVs.animBlendUV;
             MaskMapuv = particleUVs.maskMapUV;
             MaskMapuv2 = particleUVs.maskMap2UV;
@@ -288,6 +288,7 @@
         }
         else
         {
+            MainTex_UV = input.texcoord.xy;
             MaskMapuv = input.texcoord.zw;
             MaskMapuv2 = input.texcoordMaskMap2.xy;
             MaskMapuv3 = input.texcoordMaskMap2.zw;
@@ -313,10 +314,10 @@
                 dissolve_noise_uv = input.dissolveNoiseTexcoord;
             #endif
         }
-        half2 originUV = uv;
+        half2 originUV = MainTex_UV;
 
         #ifdef _PARALLAX_MAPPING
-            uv.xy = ParallaxOcclusionMapping(uv,input.tangentViewDir);
+            MainTex_UV.xy = ParallaxOcclusionMapping(MainTex_UV,input.tangentViewDir);
         #endif
 
         //预先处理好法线贴图部分
@@ -343,7 +344,8 @@
         #endif
         
         half2 cum_noise = 0;
-        half2 cum_noise_xy = 0;
+        // half2 cum_noise_xy = half2(0.5,0.5);
+        half3 screenDistort_Noise = half3(0,0,1);//xy:noise,z:mask;
         half noiseMask = 1;
         #if defined(_NOISEMAP)
             #ifdef _DISTORT_REFRACTION
@@ -376,81 +378,75 @@
             
 
             #if defined(_SCREEN_DISTORT_MODE)
-                cum_noise_xy = cum_noise  * _ScreenDistortIntensity;
+                screenDistort_Noise.xy = cum_noise;
+                screenDistort_Noise.z = noiseMask;
             #endif
-
+            // #if defined(_SCREEN_DISTORT_MODE)
+            //     cum_noise_xy = cum_noise  * _ScreenDistortIntensity;
+            // #endif
+        
             cum_noise *= noiseMask;
         
+      
 
-            float2 mainTexNoise =  cum_noise * _TexDistortion_intensity;
-            #ifdef _CAMERA_OPAQUE_DISTORT_PASS
-                uv.xy += cum_noise_xy * noiseMask;
-                blendUv.xy += cum_noise_xy * noiseMask;
-            #else
-                uv.xy += mainTexNoise;//主贴图纹理扭曲
-                blendUv.xy += mainTexNoise;
-            #endif
+        
         
         #endif
 
         // SampleAlbedo--------------------
         half4 albedo = 0;
-        #if defined(_DEFERRED_DISTORT_PASS)
-            cum_noise_xy = cum_noise_xy * 1.25 + 0.5;
-            albedo = half4(cum_noise_xy, 1.0, noiseMask);
-        #else
         
-            UNITY_FLATTEN
-            if(CheckLocalFlags(FLAG_BIT_PARTICLE_BACKCOLOR))
-            {
-                _BaseColor = facing > 0 ? _BaseColor : _BaseBackColor;
-            }
+        UNITY_FLATTEN
+        if(CheckLocalFlags(FLAG_BIT_PARTICLE_BACKCOLOR))
+        {
+            _BaseColor = facing > 0 ? _BaseColor : _BaseBackColor;
+        }
 
 
-            Texture2D baseMap;
-            
-            #ifdef _CAMERA_OPAQUE_DISTORT_PASS
-                baseMap = _CameraOpaqueTexture;
-            #else
-                baseMap = _BaseMap;
-            #endif
-        
-            UNITY_BRANCH
-            if (CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
-            {
-                albedo = BlendTexture(_MainTex, uv, blendUv) * _Color;
-            }
-            else if (CheckLocalFlags(FLAG_BIT_PARTICLE_CHORATICABERRAT))
-            {
-               
-                _DistortionDirection.z = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,_DistortionDirection.z,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
-                _DistortionDirection.z *= 0.1;
-                albedo = DistortionChoraticaberrat(baseMap,originUV,uv,_DistortionDirection.z,FLAG_BIT_WRAPMODE_BASEMAP);
-            }
-            else
-            {
-                
-                 albedo = BlendTexture(baseMap, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
-                
-            }
-
-            #ifndef _CAMERA_OPAQUE_DISTORT_PASS
-
-                albedo.a = GetColorChannel(albedo,FLAG_BIT_COLOR_CHANNEL_POS_0_MAINTEX_ALPHA);
-            
-                albedo *= _BaseColor ;
-                albedo.rgb *= _BaseColorIntensityForTimeline;
-            #endif
+        Texture2D baseMap = _BaseMap;
         
 
-        #endif
+
+        float2 mainTexNoise =  cum_noise * _TexDistortion_intensity;
+
+        MainTex_UV.xy += mainTexNoise;//主贴图纹理扭曲
+        blendUv.xy += mainTexNoise;
+    
+    
+        UNITY_BRANCH
+        if (CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
+        {
+            albedo = BlendTexture(_MainTex, MainTex_UV, blendUv) * _Color;
+        }
+        else if (CheckLocalFlags(FLAG_BIT_PARTICLE_CHORATICABERRAT))
+        {
+           
+            _DistortionDirection.z = GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_CHORATICABERRAT_INTENSITY,_DistortionDirection.z,input.VaryingsP_Custom1,input.VaryingsP_Custom2);
+            _DistortionDirection.z *= 0.1;
+            albedo = DistortionChoraticaberrat(baseMap,originUV,MainTex_UV,_DistortionDirection.z,FLAG_BIT_WRAPMODE_BASEMAP);
+        }
+        else
+        {
+            albedo = BlendTexture(baseMap, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+        }
+
+        // #ifndef _CAMERA_OPAQUE_DISTORT_PASS
+
+        albedo.a = GetColorChannel(albedo,FLAG_BIT_COLOR_CHANNEL_POS_0_MAINTEX_ALPHA);
+    
+        albedo *= _BaseColor ;
+        albedo.rgb *= _BaseColorIntensityForTimeline;
+            // #endif
+        
+
+        // #endif
         
         half alpha = albedo.a;
         half3 result = albedo.rgb;
         
         #ifdef _FX_LIGHT_MODE_SIX_WAY
-        float4 rigRTBkSample  = BlendTexture(_RigRTBk, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
-        float4 rigLBtFSample  = BlendTexture(_RigLBtF, uv, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+        float4 rigRTBkSample  = BlendTexture(_RigRTBk, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+        float4 rigLBtFSample  = BlendTexture(_RigLBtF, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
         #endif
       
         UNITY_BRANCH
@@ -480,7 +476,7 @@
 
         if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX))
         {
-            BumpTex_uv = uv;
+            BumpTex_uv = MainTex_UV;
         }
 
      
@@ -1030,6 +1026,8 @@
         }
         
 
+   
+        
         alpha *= _AlphaAll;
 
         #if defined  (_ALPHAPREMULTIPLY_ON) || defined(_ALPHAMODULATE_ON)
@@ -1038,6 +1036,34 @@
                 alpha *= _AdditiveToPreMultiplyAlphaLerp;
             #endif
         #endif
+
+        #ifdef _SCREEN_DISTORT_MODE
+
+        //在这里可以进行Alpha的修改
+        half screenDistortAlpha = alpha * screenDistort_Noise.z;
+        if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_SCREEN_DISTORT_ALPHA_REFINE))
+        {
+            screenDistortAlpha = pow(screenDistortAlpha,_ScreenDistortAlphaPow);
+            screenDistortAlpha *= _ScreenDistortAlphaMulti;
+            screenDistortAlpha += _ScreenDistortAlphaAdd;
+        }
+        #ifdef _DEFERRED_DISTORT_PASS
+            result = half3(screenDistort_Noise.xy,1.0);
+            alpha = screenDistortAlpha * _ScreenDistortIntensity;
+        #endif
+        
+        #ifdef _CAMERA_OPAQUE_DISTORT_PASS
+            float2 screenDistortUV = screenUV;
+            screenDistortUV = screenDistortUV + screenDistort_Noise.xy * screenDistortAlpha * _ScreenDistortIntensity;
+            half4 screenTexDistortSample = SampleTexture2DWithWrapFlags(_CameraOpaqueTexture,screenDistortUV,FLAG_BIT_WRAPMODE_BASEMAP);
+            result = screenTexDistortSample.xyz;
+            alpha = 1;
+            // alpha = screenTexDistortSample.a;
+        #endif
+
+        #endif
+        
+        
         half4 color = half4(result, alpha);
 
         

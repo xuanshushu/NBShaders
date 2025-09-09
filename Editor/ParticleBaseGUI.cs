@@ -921,6 +921,15 @@ namespace NBShaderEditor
                                         mats[i].SetShaderPassEnabled("UniversalForward",disableMainPassToggleProp.floatValue < 0.5f);
                                     }
                                 });
+                            _helper.DrawToggleFoldOut(W9ParticleShaderFlags.foldOutBit2ScreenDistortAlphaRefine,5,GetAnimBoolIndex(5),"屏幕扭曲Alpha整体调整","_ScreenDistortAlphaRefineToggle",W9ParticleShaderFlags.FLAG_BIT_PARTICLE_1_SCREEN_DISTORT_ALPHA_REFINE,1,drawBlock:
+                                AlphaRefineProp =>
+                                {
+                                    _helper.DrawFloat("范围(Pow)", "_ScreenDistortAlphaPow");
+                                    _helper.DrawFloat("相乘", "_ScreenDistortAlphaMulti");
+                                    _helper.DrawFloat("偏移(相加)", "_ScreenDistortAlphaAdd");
+                            
+                                });
+                         
                             EditorGUI.indentLevel--;
                             
                         },drawOnValueChangedBlock:

@@ -130,7 +130,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int FLAG_BIT_PARTICLE_1_DISSOLVE_LINE_MASK = 1 << 5;
     public const int FLAG_BIT_PARTICLE_1_DISSOLVE_RAMP_MULITPLY = 1 << 6;
     public const int FLAG_BIT_PARTICLE_1_MASK_REFINE = 1 << 7;
-    public const int FLAG_BIT_PARTICLE_CUSTOMDATA2W_CHORATICABERRAT_INTENSITY = 1 << 8;
+    public const int FLAG_BIT_PARTICLE_1_SCREEN_DISTORT_ALPHA_REFINE = 1 << 8;
     public const int FLAG_BIT_PARTICLE_1_IGNORE_VERTEX_COLOR = 1 << 9;
     public const int FLAG_BIT_PARTICLE_1_DISSOVLE_VORONOI = 1 << 10;
     public const int FLAG_BIT_PARTICLE_1_DISSOVLE_USE_RAMP = 1 << 11;
@@ -241,7 +241,7 @@ public class W9ParticleShaderFlags: ShaderFlagsBase
     public const int foldOutBit2DissolveLine= 1 << 3;
     public const int foldOutBit2BaseBackColor= 1 << 4;
     public const int foldOutBit2MaskRefine= 1 << 5;
-    public const int foldOutBit2ScreenDistortMode = 1 << 6;
+    public const int foldOutBit2ScreenDistortAlphaRefine = 1 << 6;
 
 
     #region CustomDataCodes

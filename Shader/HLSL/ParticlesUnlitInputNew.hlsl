@@ -39,6 +39,9 @@
     float _MaskMapUVRotation;
     float _NoiseMapUVRotation;
     half _ScreenDistortIntensity;
+    half _ScreenDistortAlphaPow;
+    half _ScreenDistortAlphaAdd;
+    half _ScreenDistortAlphaMulti;
     half _NoiseIntensity;
     half _RefractionIOR;
     half _uvRapSoft;
@@ -730,7 +733,7 @@
             return baseUVs;
     }
 
-    void ParticleProcessUV(float4 meshTexcoord0, float2 specialUVInTexcoord3,inout ParticleUVs particleUVs,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,float2 screenUV,float3 postionOS)
+    void ParticleProcessUV(float4 meshTexcoord0, float2 specialUVInTexcoord3,inout ParticleUVs particleUVs,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,float3 postionOS)
     {
         BaseUVs baseUVs= ProcessBaseUVs(meshTexcoord0,specialUVInTexcoord3,VaryingsP_Custom1,VaryingsP_Custom2,postionOS);
         
@@ -751,33 +754,31 @@
         #endif
 
 
-        #ifdef _SCREEN_DISTORT_MODE
-            particleUVs.mainTexUV = screenUV;
-        #else
-            _BaseMapUVRotation += time * _BaseMapUVRotationSpeed;
-            baseMapUV = Rotate_Radians_float(baseMapUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
-            UNITY_BRANCH
-            if(CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
+       
+        _BaseMapUVRotation += time * _BaseMapUVRotationSpeed;
+        baseMapUV = Rotate_Radians_float(baseMapUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
+        UNITY_BRANCH
+        if(CheckLocalFlags(FLAG_BIT_PARTICLE_UIEFFECT_ON) & !CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_BASEMAP_MODE))
+        {
+            if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE))
             {
-                if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_UIEFFECT_SPRITE_MODE))
-                {
-                    float2 originUV = meshTexcoord0.xy;//精灵主贴图不调整。
-                    particleUVs.mainTexUV = originUV*_UI_MainTex_ST.xy+_UI_MainTex_ST.zw;
-                }
-                else
-                {
-                    particleUVs.mainTexUV = baseMapUV*_UI_MainTex_ST.xy+_UI_MainTex_ST.zw;
-                }
+                float2 originUV = meshTexcoord0.xy;//精灵主贴图不调整。
+                particleUVs.mainTexUV = originUV*_UI_MainTex_ST.xy+_UI_MainTex_ST.zw;
             }
             else
             {
-                baseMapUV.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0,VaryingsP_Custom1,VaryingsP_Custom2);
-                baseMapUV.y += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0,VaryingsP_Custom1,VaryingsP_Custom2);
-                particleUVs.mainTexUV = TRANSFORM_TEX(baseMapUV, _BaseMap);  //主帖图UV重复和偏移
+                particleUVs.mainTexUV = baseMapUV*_UI_MainTex_ST.xy+_UI_MainTex_ST.zw;
             }
-            particleUVs.mainTexUV = UVOffsetAnimaiton(particleUVs.mainTexUV,_BaseMapMaskMapOffset.xy);
-            
-        #endif
+        }
+        else
+        {
+            baseMapUV.x += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_X,0,VaryingsP_Custom1,VaryingsP_Custom2);
+            baseMapUV.y += GetCustomData(_W9ParticleCustomDataFlag0,FLAGBIT_POS_0_CUSTOMDATA_MAINTEX_OFFSET_Y,0,VaryingsP_Custom1,VaryingsP_Custom2);
+            particleUVs.mainTexUV = TRANSFORM_TEX(baseMapUV, _BaseMap);  //主帖图UV重复和偏移
+        }
+        particleUVs.mainTexUV = UVOffsetAnimaiton(particleUVs.mainTexUV,_BaseMapMaskMapOffset.xy);
+        
+       
 
         #if defined(_NORMALMAP)
         if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_BUMP_TEX_UV_FOLLOW_MAINTEX))
