@@ -20,31 +20,8 @@
         UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
         
         time = _Time.y;
-
+        
         float4 positionOS = input.vertex;
-
-        if(CheckLocalFlags(FLAG_BIT_PARTICLE_VERTEX_OFFSET_ON))
-        {
-            //因为极坐标和旋转会强制到Frag计算，所以顶点在这边特殊处理一遍。
-            BaseUVs baseUVsForVertexOffset = ProcessBaseUVs(input.texcoords,0,output.VaryingsP_Custom1,output.VaryingsP_Custom2,positionOS);
-            
-            _VertexOffset_Map_ST.z += GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_X,0,input.Custom1,input.Custom2);
-            _VertexOffset_Map_ST.w += GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_Y,0,input.Custom1,input.Custom2);
-            _VertexOffset_Vec.z = GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_VERTEXOFFSET_INTENSITY,_VertexOffset_Vec.z,input.Custom1,input.Custom2);
-
-            if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_VERTEXOFFSET_MASKMAP))
-            {
-                _VertexOffset_MaskMap_ST.z += GetCustomData(_W9ParticleCustomDataFlag3,FLAGBIT_POS_3_CUSTOMDATA_VERTEX_OFFSET_MASK_X,0,input.Custom1,input.Custom2);
-                _VertexOffset_MaskMap_ST.w += GetCustomData(_W9ParticleCustomDataFlag3,FLAGBIT_POS_3_CUSTOMDATA_VERTEX_OFFSET_MASK_Y,0,input.Custom1,input.Custom2);
-            }
-            
-            float2 vertexOffsetUVs = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MAP,baseUVsForVertexOffset);
-            float2 vertexOffsetMaskUVs = GetUVByUVMode(_UVModeFlag0,FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MASKMAP,baseUVsForVertexOffset);
-
-            positionOS.xyz = VetexOffset(positionOS,vertexOffsetUVs,vertexOffsetMaskUVs,input.normalOS);
-        }
-        
-        
         // position ws is used to compute eye depth in vertFading
         output.positionWS.xyz = mul(unity_ObjectToWorld, positionOS).xyz;
         output.positionOS.xyz = positionOS;
@@ -106,14 +83,11 @@
         // }
 
         output.texcoord.xy = input.texcoords.xy;
-
-     
-  
-        
         
         //顶点处理的原则：
         //Twirl和极坐标,贴花处理，在片段着色器层处理UV。
         //BaseMap，遮罩Mask，Noise，高光（自发光） 和极坐标处理相关。
+        BaseUVs baseUVs;
         if(!isProcessUVInFrag())
         {
 
@@ -127,8 +101,10 @@
                 }
             #endif
             ParticleUVs particleUVs = (ParticleUVs)0;
-            
-            ParticleProcessUV(input.texcoords, specialUVInTexcoord3,particleUVs,output.VaryingsP_Custom1,output.VaryingsP_Custom2,output.positionOS.xyz);
+            float2 screenUV = output.clipPos.xy/output.clipPos.w;
+            screenUV = screenUV*0.5+0.5;
+            baseUVs = ProcessBaseUVs(input.texcoords,specialUVInTexcoord3,output.VaryingsP_Custom1,output.VaryingsP_Custom2,output.positionOS.xyz,output.positionWS,screenUV);
+            ParticleProcessUV(particleUVs,output.VaryingsP_Custom1,output.VaryingsP_Custom2,baseUVs);
             output.texcoord2AndSpecialUV.xy = particleUVs.animBlendUV;
             output.texcoord2AndSpecialUV.zw= particleUVs.specUV;
             output.texcoord.xy = particleUVs.mainTexUV;
@@ -172,6 +148,43 @@
             //粒子帧融合的情况，兼容一下。
             output.normalWSAndAnimBlend.w = input.texcoordBlend.x;
         #endif
+
+        if(CheckLocalFlags(FLAG_BIT_PARTICLE_VERTEX_OFFSET_ON))
+        {
+            BaseUVs baseUVsForVertexOffset;
+            if(!isProcessUVInFrag())
+            {
+                baseUVsForVertexOffset = baseUVs;
+            }
+            else
+            {
+                float2 screenUV = output.clipPos.xy/output.clipPos.w;
+                screenUV = screenUV*0.5+0.5;
+                baseUVsForVertexOffset = ProcessBaseUVs(input.texcoords,0,output.VaryingsP_Custom1,output.VaryingsP_Custom2,positionOS,output.positionWS,screenUV);
+            }
+            
+            //因为极坐标和旋转会强制到Frag计算，所以顶点在这边特殊处理一遍。
+            
+            _VertexOffset_Map_ST.z += GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_X,0,input.Custom1,input.Custom2);
+            _VertexOffset_Map_ST.w += GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_VERTEX_OFFSET_Y,0,input.Custom1,input.Custom2);
+            _VertexOffset_Vec.z = GetCustomData(_W9ParticleCustomDataFlag1,FLAGBIT_POS_1_CUSTOMDATA_VERTEXOFFSET_INTENSITY,_VertexOffset_Vec.z,input.Custom1,input.Custom2);
+
+            if (CheckLocalFlags1(FLAG_BIT_PARTICLE_1_VERTEXOFFSET_MASKMAP))
+            {
+                _VertexOffset_MaskMap_ST.z += GetCustomData(_W9ParticleCustomDataFlag3,FLAGBIT_POS_3_CUSTOMDATA_VERTEX_OFFSET_MASK_X,0,input.Custom1,input.Custom2);
+                _VertexOffset_MaskMap_ST.w += GetCustomData(_W9ParticleCustomDataFlag3,FLAGBIT_POS_3_CUSTOMDATA_VERTEX_OFFSET_MASK_Y,0,input.Custom1,input.Custom2);
+            }
+            
+            float2 vertexOffsetUVs = GetUVByUVMode(_UVModeFlag0,_UVModeFlagType0,FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MAP,baseUVsForVertexOffset);
+            float2 vertexOffsetMaskUVs = GetUVByUVMode(_UVModeFlag0,_UVModeFlagType0,FLAG_BIT_UVMODE_POS_0_VERTEX_OFFSET_MASKMAP,baseUVsForVertexOffset);
+
+            positionOS.xyz = VetexOffset(positionOS,vertexOffsetUVs,vertexOffsetMaskUVs,input.normalOS);
+
+            //再算一遍
+            output.positionWS.xyz = mul(unity_ObjectToWorld, positionOS).xyz;
+            output.positionOS.xyz = positionOS;
+            output.clipPos = TransformObjectToHClip(positionOS);
+        }
         
         UNITY_BRANCH
         if(needEyeDepth())
@@ -270,7 +283,8 @@
             
             #endif
             ParticleUVs particleUVs = (ParticleUVs)0;
-            ParticleProcessUV(uv,specialUVInTexcoord3,particleUVs,input.VaryingsP_Custom1,input.VaryingsP_Custom2,input.positionOS.xyz);
+            BaseUVs baseUVs = ProcessBaseUVs(uv,specialUVInTexcoord3,input.VaryingsP_Custom1,input.VaryingsP_Custom2,input.positionOS.xyz,input.positionWS.xyz,screenUV);
+            ParticleProcessUV(particleUVs,input.VaryingsP_Custom1,input.VaryingsP_Custom2,baseUVs);
             MainTex_UV.xy = particleUVs.mainTexUV;
             blendUv.xy = particleUVs.animBlendUV;
             MaskMapuv = particleUVs.maskMapUV;

@@ -83,7 +83,6 @@
     	_BumpMapMaskMode("法线贴图多通道模式",Float) = 0
     	_BumpScale("Scale", Float) = 1.0
         _BumpTex("Normal Map", 2D) = "bump" {}
-    	_BumpTexFollowMainTexUVToggle("法线跟随主贴图UV",Float) = 0
     	_MaterialInfo("x:金属度,y:光滑度",Vector) = (1,1,0,0)
     	_BlinnPhongSpecularToggle("BlinnPhong高光开关",Float) = 0
     	[HDR]_SpecularColor("BlinnPhong高光颜色",Color) = (1,1,1,1)
@@ -155,7 +154,8 @@
         //[Toggle(_JIZUOBIAO)] _N121 ("JIZUOBIAO?", float) = 0
         [HideInInspector]_PolarCoordinatesEnabled ("__PolarCoordinatesEnabled", Float) = 0.0
         _PCCenter ("xy:极坐标中心 z:极坐标强度", vector) = (0.5, 0.5, 1, 0)//位置坐标用的前两个分量，z分量给强度。
-
+		_WorldPosUVMode("_WorldPosUVMode",Float) = 0
+    	_ObjectPosUVMode("_ObjectPosUVMode",Float) = 0
         
         // 噪波 --------------
         //[Toggle(_NOISEMAP)]_N ("NOISEMAP?", float) =0
@@ -193,7 +193,6 @@
         _uvRapSoft ("LiuuvRapSoft-ignore", Range(0, 1)) = 0
         [HDR]_EmissionMapColor ("流光贴图颜色_hdr", Color) = (1, 1, 1, 1)
         _EmissionMapColorIntensity("流光颜色强度", float) = 1
-    	_EmissionFollowMainTexUV("流光跟随主贴图",Float) = 0
     	
     	//颜色渐变贴图--------
     	_ColorBlendMap_Toggle("__ColorBlendMap_Toggle",Float) = 0
@@ -201,7 +200,6 @@
         [HDR]_ColorBlendColor("颜色渐变叠加_hdr",Color) = (1,1,1,1)
         _ColorBlendMapOffset("xy:颜色渐变贴图偏移动画",Vector) = (0,0,0,0)
     	_ColorBlendAlphaMultiplyMode("颜色渐变Alpha相乘开关",Float) = 0
-	    _ColorBlendFollowMainTexUV("颜色渐变UV跟随主贴图UV",Float) = 0
     	_ColorBlendVec("x:颜色渐变扰动强度z:Alpha强度w:旋转",Vector) = (0,0,1,0)
     	
     	//颜色映射Ramp
@@ -364,6 +362,9 @@
         _ZOffset_Toggle("深度偏移_Toggle",Float) = 0
         _offsetFactor("深度偏移Sacle-ignore", range(-2000,2000)) = 0
         _offsetUnits("深度偏移单位距离-ignore", range(-2000,2000)) = 0
+    	
+    	_WorldSpaceUVModeSelector("_WordSpaceUVModeSelector",Float) = 1
+    	_ObjectSpaceUVModeSelector("_ObjectSpaceUVModeSelector",Float) = 1
         
         [HideInInspector] _W9ParticleShaderFlags("_W9ParticleShaderFlags", Integer) = 0
         [HideInInspector] _W9ParticleShaderFlags1("_W9ParticleShaderFlags1", Integer) = 0
@@ -373,6 +374,7 @@
         [HideInInspector] _W9ParticleCustomDataFlag2("_W9ParticleCustomDataFlag2", Integer) = 0
         [HideInInspector] _W9ParticleCustomDataFlag3("_W9ParticleCustomDataFlag3", Integer) = 0
         [HideInInspector] _UVModeFlag0("_UVModeFlag0", Integer) = 0
+        [HideInInspector] _UVModeFlagType0("_UVModeFlagType0", Integer) = 0
         [HideInInspector] _W9ParticleShaderGUIFoldToggle("_W9ParticleShaderGUIFoldToggle", Integer) = 3//前2个开关默认打开
         [HideInInspector] _W9ParticleShaderGUIFoldToggle1("_W9ParticleShaderGUIFoldToggle1", Integer) = 255//这边默认全开
         [HideInInspector] _W9ParticleShaderGUIFoldToggle2("_W9ParticleShaderGUIFoldToggle2", Integer) = 255//这边默认全开
