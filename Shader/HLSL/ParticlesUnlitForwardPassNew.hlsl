@@ -104,7 +104,7 @@
             float2 screenUV = output.clipPos.xy/output.clipPos.w;
             screenUV = screenUV*0.5+0.5;
             baseUVs = ProcessBaseUVs(input.texcoords,specialUVInTexcoord3,output.VaryingsP_Custom1,output.VaryingsP_Custom2,output.positionOS.xyz,output.positionWS,screenUV);
-            ParticleProcessUV(particleUVs,output.VaryingsP_Custom1,output.VaryingsP_Custom2,baseUVs);
+            ParticleProcessUV(particleUVs,input.texcoords,output.VaryingsP_Custom1,output.VaryingsP_Custom2,baseUVs);
             output.texcoord2AndSpecialUV.xy = particleUVs.animBlendUV;
             output.texcoord2AndSpecialUV.zw= particleUVs.specUV;
             output.texcoord.xy = particleUVs.mainTexUV;
@@ -284,7 +284,7 @@
             #endif
             ParticleUVs particleUVs = (ParticleUVs)0;
             BaseUVs baseUVs = ProcessBaseUVs(uv,specialUVInTexcoord3,input.VaryingsP_Custom1,input.VaryingsP_Custom2,input.positionOS.xyz,input.positionWS.xyz,screenUV);
-            ParticleProcessUV(particleUVs,input.VaryingsP_Custom1,input.VaryingsP_Custom2,baseUVs);
+            ParticleProcessUV(particleUVs,uv,input.VaryingsP_Custom1,input.VaryingsP_Custom2,baseUVs);
             MainTex_UV.xy = particleUVs.mainTexUV;
             blendUv.xy = particleUVs.animBlendUV;
             MaskMapuv = particleUVs.maskMapUV;

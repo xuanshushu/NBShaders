@@ -756,21 +756,7 @@
         
             float2 baseMapUV = GetUVByUVMode(_UVModeFlag0,_UVModeFlagType0,FLAG_BIT_UVMODE_POS_0_MAINTEX,baseUVs);
 
-            #ifdef _FLIPBOOKBLENDING_ON //开启序列帧融合
-            if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_ANIMATION_SHEET_HELPER))
-            {
-                //走AnimationSheetHelper脚本的情况，永远和baseMap同步。
-                particleUVs.animBlendUV = baseMapUV*_BaseMap_AnimationSheetBlend_ST.xy+_BaseMap_AnimationSheetBlend_ST.zw;
-            }
-            else
-            {
-                //走粒子的情况
-                particleUVs.animBlendUV = meshTexcoord0.zw;
-            }
-            #endif
-
-
-           float2 mainTexUV = 0;
+            float2 mainTexUV = 0;
             _BaseMapUVRotation += time * _BaseMapUVRotationSpeed;
             baseMapUV = Rotate_Radians_float(baseMapUV, half2(0.5, 0.5), _BaseMapUVRotation);  //主贴图旋转
             UNITY_BRANCH
@@ -794,12 +780,12 @@
             }
             mainTexUV = UVOffsetAnimaiton(mainTexUV,_BaseMapMaskMapOffset.xy);
             baseUVs.mainTexUV = mainTexUV;
-        
+
             return baseUVs;
     }
 
 
-    void ParticleProcessUV(inout ParticleUVs particleUVs,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,BaseUVs baseUVs)
+    void ParticleProcessUV(inout ParticleUVs particleUVs,float4 meshTexcoord0,float4 VaryingsP_Custom1,float4 VaryingsP_Custom2,BaseUVs baseUVs)
     {
         particleUVs.specUV = baseUVs.specialUVChannel;
 
@@ -845,6 +831,18 @@
         // particleUVs.mainTexUV = UVOffsetAnimaiton(particleUVs.mainTexUV,_BaseMapMaskMapOffset.xy);
         particleUVs.mainTexUV = baseUVs.mainTexUV;
         //-------------------------------------------------
+        #ifdef _FLIPBOOKBLENDING_ON //开启序列帧融合
+        // if(CheckLocalFlags1(FLAG_BIT_PARTICLE_1_ANIMATION_SHEET_HELPER))
+        // {
+        //     //走AnimationSheetHelper脚本的情况，永远和baseMap同步。
+        //     particleUVs.animBlendUV = baseMapUV*_BaseMap_AnimationSheetBlend_ST.xy+_BaseMap_AnimationSheetBlend_ST.zw;
+        // }
+        // else
+        // {
+            //走粒子的情况
+            particleUVs.animBlendUV = meshTexcoord0.zw;
+        // }
+        #endif
        
 
         #if defined(_NORMALMAP)
