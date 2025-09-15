@@ -392,6 +392,7 @@
     	AlphaAllRangeVec("_AlphaAll",Vector) = (0,1,0,0)
     	_NoiseIntensityRangeVec("_NoiseIntensity",Vector) = (0,1,0,0)
     	_ScreenDistortIntensityRangeVec("_ScreenDistortIntensity",Vector) = (0,1,0,0)
+    	_ParallaxMapping_IntensityRangeVec("_ParallaxMappingRangeVec",Vector) = (0,0.1,0,0)
 //        _offsetUnits("深度偏移单位距离-ignore", range(-2000,2000)) = 0
     }
     SubShader

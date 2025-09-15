@@ -338,11 +338,12 @@
         half metallic = 1;
         half smoothness = 1;
         half3 normalTS = half3(0, 0, 1);//TODO
+        half3x3 tangentToWorld = (half3x3)0;
         #ifdef _NORMALMAP
             half4 normalMapSample = SampleTexture2DWithWrapFlags(_BumpTex,BumpTex_uv,FLAG_BIT_WRAPMODE_BUMPTEX);
             if (CheckLocalFlags(FLAG_BIT_PARTICLE_NORMALMAP_MASK_MODE))
             {
-                normalTS = UnpackNormalRGB(half4(normalMapSample.xy,0,1),_BumpScale);
+                normalTS = UnpackNormalRGB(half4(normalMapSample.xy,1,1),_BumpScale);
                 metallic *= normalMapSample.z;
                 smoothness *= normalMapSample.w;
             }
@@ -353,8 +354,8 @@
             
             float sgn = input.tangentWS.w;      // should be either +1 or -1
             float3 bitangent = sgn * cross(input.normalWSAndAnimBlend.xyz, input.tangentWS.xyz);
-            half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWSAndAnimBlend.xyz);
-            input.normalWSAndAnimBlend.xyz = TransformTangentToWorld(normalTS, tangentToWorld);
+            tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWSAndAnimBlend.xyz);
+            input.normalWSAndAnimBlend.xyz =  normalize(TransformTangentToWorld(normalTS, tangentToWorld));
         #endif
         
         half2 cum_noise = 0;
@@ -368,7 +369,6 @@
                 cum_noise = refracVec.xy;
                 // distortFlow = refracVec.xy * props._NormalRefractionBias;
             #else
-        
                 half4 noiseSample = SampleNoise(_NoiseOffset, _NoiseMap, noiseMap_uv, input.positionWS.xyz);
                 cum_noise = noiseSample.xy;
                 UNITY_FLATTEN
@@ -459,8 +459,8 @@
         half3 result = albedo.rgb;
         
         #ifdef _FX_LIGHT_MODE_SIX_WAY
-        float4 rigRTBkSample  = BlendTexture(_RigRTBk, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
-        float4 rigLBtFSample  = BlendTexture(_RigLBtF, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+            float4 rigRTBkSample  = BlendTexture(_RigRTBk, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
+            float4 rigLBtFSample  = BlendTexture(_RigLBtF, MainTex_UV, blendUv,FLAG_BIT_WRAPMODE_BASEMAP);
         #endif
       
         UNITY_BRANCH
@@ -498,7 +498,7 @@
         #ifndef _FX_LIGHT_MODE_UNLIT
     
             InputData inputData;
-            InitializeInputData(input, viewDirWS, inputData);
+            InitializeInputData(input, tangentToWorld,viewDirWS, inputData);
             metallic *= _MaterialInfo.x;
             half3 specular = 0;
             smoothness *= _MaterialInfo.y;
@@ -506,47 +506,47 @@
             half3 pbrEmission = 0;
            // return half4(inputData.bakedGI,1);
             #if defined (_FX_LIGHT_MODE_BLINN_PHONG) || defined(_FX_LIGHT_MODE_HALF_LAMBERT) 
-            half4 specularGloss = _SpecularColor;
-            #ifdef _FX_LIGHT_MODE_BLINN_PHONG
-            half4 blinnPhong = UniversalFragmentBlinnPhong(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
-            #else //_FX_LIGHT_MODE_HALF_LAMBERT
-            half4 blinnPhong = UniversalFragmentHalfLambert(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
-            #endif
-            result = blinnPhong.rgb;
-            alpha = blinnPhong.a;
+                half4 specularGloss = _SpecularColor;
+                #ifdef _FX_LIGHT_MODE_BLINN_PHONG
+                    half4 blinnPhong = UniversalFragmentBlinnPhong(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
+                #else //_FX_LIGHT_MODE_HALF_LAMBERT
+                    half4 blinnPhong = UniversalFragmentHalfLambert(inputData,result.rgb, specularGloss, smoothness, pbrEmission, alpha,normalTS);
+                #endif
+                result = blinnPhong.rgb;
+                alpha = blinnPhong.a;
             #elif _FX_LIGHT_MODE_PBR
-            half4 pbr = UniversalFragmentPBR(inputData,result.rgb,  metallic,  specular, smoothness,  occlusion,  pbrEmission, alpha);
-            result = pbr.rgb;
-            alpha = pbr.a;
+                half4 pbr = UniversalFragmentPBR(inputData,result.rgb,  metallic,  specular, smoothness,  occlusion,  pbrEmission, alpha);
+                result = pbr.rgb;
+                alpha = pbr.a;
             #elif _FX_LIGHT_MODE_SIX_WAY
-            BSDFData bsdfData = (BSDFData)0;
-            bsdfData.absorptionRange = GetAbsorptionRange(_SixWayInfo.x);
-            bsdfData.diffuseColor = albedo;
-            bsdfData.normalWS = inputData.normalWS;
-            bsdfData.tangentWS = input.tangentWS;//Check this
-            bsdfData.rigRTBk = rigRTBkSample.xyz * INV_PI;//AccordingTo SixWayForwardPass
-            bsdfData.rigLBtF = rigLBtFSample.xyz * INV_PI;//AccordingTo SixWayForwardPass
-            bsdfData.bakeDiffuseLighting0 = input.bakeDiffuseLighting0;
-            bsdfData.bakeDiffuseLighting1 = input.bakeDiffuseLighting1;
-            bsdfData.bakeDiffuseLighting2 = input.bakeDiffuseLighting2;
-            bsdfData.backBakeDiffuseLighting0 = input.backBakeDiffuseLighting0;
-            bsdfData.backBakeDiffuseLighting1 = input.backBakeDiffuseLighting1;
-            bsdfData.backBakeDiffuseLighting2 = input.backBakeDiffuseLighting2;
-            bsdfData.emissionInput = rigLBtFSample.a;
-            GetSixWayEmission(bsdfData,_SixWayEmissionRamp,_SixWayEmissionColor,CheckLocalFlags1(FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP));//Init Emission
-            bsdfData.alpha = rigRTBkSample.a * _BaseColor.a;
+                BSDFData bsdfData = (BSDFData)0;
+                bsdfData.absorptionRange = GetAbsorptionRange(_SixWayInfo.x);
+                bsdfData.diffuseColor = albedo;
+                bsdfData.normalWS = inputData.normalWS;
+                bsdfData.tangentWS = input.tangentWS;//Check this
+                bsdfData.rigRTBk = rigRTBkSample.xyz * INV_PI;//AccordingTo SixWayForwardPass
+                bsdfData.rigLBtF = rigLBtFSample.xyz * INV_PI;//AccordingTo SixWayForwardPass
+                bsdfData.bakeDiffuseLighting0 = input.bakeDiffuseLighting0;
+                bsdfData.bakeDiffuseLighting1 = input.bakeDiffuseLighting1;
+                bsdfData.bakeDiffuseLighting2 = input.bakeDiffuseLighting2;
+                bsdfData.backBakeDiffuseLighting0 = input.backBakeDiffuseLighting0;
+                bsdfData.backBakeDiffuseLighting1 = input.backBakeDiffuseLighting1;
+                bsdfData.backBakeDiffuseLighting2 = input.backBakeDiffuseLighting2;
+                bsdfData.emissionInput = rigLBtFSample.a;
+                GetSixWayEmission(bsdfData,_SixWayEmissionRamp,_SixWayEmissionColor,CheckLocalFlags1(FLAG_BIT_PARTICLE_1_SIXWAY_RAMPMAP));//Init Emission
+                bsdfData.alpha = rigRTBkSample.a * _BaseColor.a;
 
-            ModifyBakedDiffuseLighting(bsdfData,inputData.bakedGI);
+                ModifyBakedDiffuseLighting(bsdfData,inputData.bakedGI);
 
-            half4 sixWay = UniversalFragmentSixWay(inputData,bsdfData);
+                half4 sixWay = UniversalFragmentSixWay(inputData,bsdfData);
+                
+                
+            // half3 dir = _MainLightPosition.xyz;
+            // dir = TransformToLocalFrame(dir, bsdfData);
+            // return half4(dir,1);
             
-            
-        // half3 dir = _MainLightPosition.xyz;
-        // dir = TransformToLocalFrame(dir, bsdfData);
-        // return half4(dir,1);
-        
-            result = sixWay.rgb;
-            alpha = sixWay.a;
+                result = sixWay.rgb;
+                alpha = sixWay.a;
         
             #endif
             

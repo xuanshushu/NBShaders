@@ -1548,7 +1548,7 @@ namespace NBShaderEditor
                         _helper.DrawTexture("视差贴图", "_ParallaxMapping_Map", drawWrapMode: true,
                             wrapModeFlagBitsName: W9ParticleShaderFlags.FLAG_BIT_WRAPMODE_PARALLAXMAPPINGMAP,
                             flagIndex: 2);
-                        _helper.DrawSlider("视差", "_ParallaxMapping_Intensity", 0, 0.1f);
+                        _helper.DrawSlider("视差", "_ParallaxMapping_Intensity", rangePropertyName:"_ParallaxMapping_IntensityRangeVec");
 
                         Action<float, bool> OnPomLayerCountChange = (f, isMixedValue) =>
                         {

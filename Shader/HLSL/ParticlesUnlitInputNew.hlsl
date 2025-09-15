@@ -1295,7 +1295,7 @@
 
 
 
-    void InitializeInputData(VaryingsParticle input, half3 viewDirWS, out InputData inputData)
+    void InitializeInputData(VaryingsParticle input,half3x3 tangentToWorld, half3 viewDirWS, out InputData inputData)
     {
         inputData = (InputData)0;
 
@@ -1318,6 +1318,8 @@
     // #endif
     //
     //     inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
+    inputData.tangentToWorld = tangentToWorld;
+    inputData.normalWS = input.normalWSAndAnimBlend.xyz;
     inputData.viewDirectionWS = viewDirWS;
 
     #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
