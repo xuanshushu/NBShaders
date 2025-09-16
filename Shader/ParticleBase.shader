@@ -435,7 +435,7 @@
             
             HLSLPROGRAM
             #define PARTICLE
-            #pragma target 4.5
+            #pragma target 3.0
             #pragma exclude_renderers d3d11_9x
             #pragma exclude_renderers d3d9
             
@@ -546,7 +546,7 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
-            #pragma target 4.5
+            #pragma target 3.0
             
             // -------------------------------------
             // Material Keywords
@@ -649,7 +649,7 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
-            #pragma target 4.5
+            #pragma target 3.0
             
             // -------------------------------------
             // Material Keywords
@@ -753,7 +753,7 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
-            #pragma target 4.5
+            #pragma target 3.0
             
             // -------------------------------------
             // Material Keywords
@@ -859,7 +859,7 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
-            #pragma target 4.5
+            #pragma target 3.0
             
             // -------------------------------------
             // Material Keywords
