@@ -435,7 +435,13 @@
             
             HLSLPROGRAM
             #define PARTICLE
+           #if defined ( SHADER_API_GLES)||defined(SHADER_API_GLES3)
             #pragma target 3.0
+            #else
+            #pragma target 4.5
+            #endif
+            
+            
             #pragma exclude_renderers d3d11_9x
             #pragma exclude_renderers d3d9
             
@@ -546,7 +552,11 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
+           #if defined ( SHADER_API_GLES)||defined(SHADER_API_GLES3)
             #pragma target 3.0
+            #else
+            #pragma target 4.5
+            #endif
             
             // -------------------------------------
             // Material Keywords
@@ -649,7 +659,11 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
+           #if defined ( SHADER_API_GLES)||defined(SHADER_API_GLES3)
             #pragma target 3.0
+            #else
+            #pragma target 4.5
+            #endif
             
             // -------------------------------------
             // Material Keywords
@@ -753,7 +767,11 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
+           #if defined ( SHADER_API_GLES)||defined(SHADER_API_GLES3)
             #pragma target 3.0
+            #else
+            #pragma target 4.5
+            #endif
             
             // -------------------------------------
             // Material Keywords
@@ -859,7 +877,11 @@
             HLSLPROGRAM
             #define PARTICLE
             //20240228 target3.0 顶点着色器限制16个输出。提高版本
+           #if defined ( SHADER_API_GLES)||defined(SHADER_API_GLES3)
             #pragma target 3.0
+            #else
+            #pragma target 4.5
+            #endif
             
             // -------------------------------------
             // Material Keywords

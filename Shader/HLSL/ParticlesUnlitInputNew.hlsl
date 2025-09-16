@@ -281,7 +281,7 @@
         #endif
         
         
-        #if defined(SHADER_TARGET_GLSL) || defined(UNITY_WEBGL)
+        #if defined(SHADER_TARGET_GLSL) ||defined (SHADER_API_GLES)|| defined(SHADER_API_GLES3)
         switch (wrapMode)
         {
             case 0: uv = frac(uv);break;
